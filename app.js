@@ -147,7 +147,9 @@ $("#go").onclick = async () => {
       state.verdict = order[v] > order[ruleVerdict] ? v : ruleVerdict;
       const bad = (x) => !x || /\|/.test(x) || /^(1文|短く|理由)$/.test(x.trim());
       const trivial = (x) => /^(性別|年齢|年代|年齢と性別|年齢、性別|性別と年齢|男児|女児|男性|女性)[。．]?$/.test((x || "").trim());
-      state.findings = (j.findings || []).filter((f) => !bad(f.category) && !bad(f.reason) && !trivial(f.reason)).slice(0, 3);
+      const dz = findDiseases(text).map((d) => d.name);
+      const diseaseOnly = (f) => /稀少|希少|難病|届出/.test(f.category + f.reason) || dz.some((n) => (f.reason || "").includes(n) && (f.reason || "").length < n.length + 14);
+      state.findings = (j.findings || []).filter((f) => !bad(f.category) && !bad(f.reason) && !trivial(f.reason) && !(ruleVerdict === "ok" && diseaseOnly(f))).slice(0, 3);
       // ルールが ok のとき、AI の引き上げは具体的な所見があるときだけ認める
       if (ruleVerdict === "ok" && state.verdict !== "ok" && !state.findings.length) state.verdict = "ok";
       state.summary = bad(j.summary) || (ruleVerdict === "ok" && state.verdict === "ok") ? state.summary : j.summary;
@@ -233,13 +235,13 @@ function render(s) {
     h += `<div class="card"><b>安全な形に書き換えた案</b>
       <textarea id="rw" readonly>${esc(s.rw.text)}</textarea>
       <div class="row"><button id="cp" class="ghost" data-src="rw">コピー</button>`;
-    if (navigator.gpu) h += `<button id="aigen" class="ghost">AIでさらに一般化（任意）</button>`;
+    if (navigator.gpu && s.verdict !== "ok") h += `<button id="aigen" class="ghost">AIでさらに一般化（任意）</button>`;
     h += `<span class="note">書き換え後も必ず自分の目で確認してください</span></div>`;
     for (const n of s.rw.notes) h += `<div class="warn-inline">⚠ ${esc(n)}</div>`;
     h += `<b>変更箇所と理由</b>`;
     for (const c of s.rw.changes) h += `<div class="finding"><span class="before">${esc(c.before)}</span> → <span class="after">${esc(c.after)}</span><div class="note">${esc(c.reason)}</div></div>`;
     h += `</div>`;
-  } else if (s.verdict !== "ok") {
+  } else if (s.verdict !== "ok" && s.combo.level !== "none") {
     h += `<div class="card"><b>書き換え案</b><div class="note">ルールで置換できる直接識別子はありませんでした。年齢・地域・時期・稀な特徴の組合せを見直してください。</div>`;
     if (navigator.gpu) h += `<div class="row"><button id="aigen" class="ghost">AIで一般化案を作る（任意）</button></div>`;
     h += `</div>`;
