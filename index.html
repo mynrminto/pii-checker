@@ -38,7 +38,9 @@
   .shield.alert{border-color:var(--danger)} .shield.alert #netcount{color:var(--danger)}
   .warn{background:color-mix(in srgb,var(--caution) 12%,var(--card));border:1px solid var(--caution);border-radius:8px;padding:10px 14px;font-size:13px;margin:0 0 20px}
   .before{text-decoration:line-through;color:var(--danger)} .after{color:var(--ok);font-weight:600}
-  #rw{min-height:140px;margin-top:8px}
+  #rw,#ai{min-height:120px;margin-top:8px}
+  .warn-inline{font-size:13px;color:var(--caution);margin:6px 0}
+  .diff{font-size:13px;line-height:1.8;padding:8px 10px;border:1px dashed var(--line);border-radius:6px;margin-top:6px;white-space:pre-wrap}
   footer{margin-top:40px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 </style>
 </head>
@@ -71,7 +73,7 @@
   <div class="row">
     <button id="go">判定する</button>
     <button id="clr" class="ghost">クリア</button>
-    <label class="note"><input type="checkbox" id="llm" checked> AI判定を使う</label>
+    <label class="note"><input type="checkbox" id="llm" checked> AI判定も使う（ルール判定は常に即時）</label>
     <select id="size"><option value="small">軽量モデル（約1GB）</option><option value="medium">標準モデル（約2GB）</option></select>
   </div>
   <p class="note" id="gpu">準備中…</p>
@@ -83,6 +85,6 @@
     ソースコード: <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
   </footer>
 </main>
-<script type="module" src="app.js?v=4"></script>
+<script type="module" src="app.js?v=5"></script>
 </body>
 </html>
