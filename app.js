@@ -1,6 +1,6 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=16";
-import { findDiseases } from "./diseases.js?v=16";
-import { loadCorpus } from "./rag.js?v=16";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=17";
+import { findDiseases } from "./diseases.js?v=17";
+import { loadCorpus } from "./rag.js?v=17";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -235,15 +235,13 @@ function render(s) {
     h += `<div class="card"><b>安全な形に書き換えた案</b>
       <textarea id="rw" readonly>${esc(s.rw.text)}</textarea>
       <div class="row"><button id="cp" class="ghost" data-src="rw">コピー</button>`;
-    if (navigator.gpu && s.verdict !== "ok") h += `<button id="aigen" class="ghost">AIでさらに一般化（任意）</button>`;
-    h += `<span class="note">書き換え後も必ず自分の目で確認してください</span></div>`;
+    h += `<span class="note">書き換え後も必ず自分の目で確認してください。稀な経過や特異な数値の一般化は人の判断で行ってください</span></div>`;
     for (const n of s.rw.notes) h += `<div class="warn-inline">⚠ ${esc(n)}</div>`;
     h += `<b>変更箇所と理由</b>`;
     for (const c of s.rw.changes) h += `<div class="finding"><span class="before">${esc(c.before)}</span> → <span class="after">${esc(c.after)}</span><div class="note">${esc(c.reason)}</div></div>`;
     h += `</div>`;
   } else if (s.verdict !== "ok" && s.combo.level !== "none") {
     h += `<div class="card"><b>書き換え案</b><div class="note">ルールで置換できる直接識別子はありませんでした。年齢・地域・時期・稀な特徴の組合せを見直してください。</div>`;
-    if (navigator.gpu) h += `<div class="row"><button id="aigen" class="ghost">AIで一般化案を作る（任意）</button></div>`;
     h += `</div>`;
   }
 
@@ -271,5 +269,4 @@ function render(s) {
     try { await navigator.clipboard.writeText(ta.value); } catch { document.execCommand("copy"); }
     b.textContent = "コピーしました"; setTimeout(() => (b.textContent = "コピー"), 1500);
   };
-  const g = $("#aigen"); if (g) g.onclick = () => aiGeneralize(s);
 }
