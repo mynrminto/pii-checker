@@ -82,8 +82,8 @@ export function comboRisk(hits, text) {
   const n = q.length;
   const strong = q.includes("稀少・届出疾患") && q.includes("地域");
   if (strong && (q.includes("極端な年齢") || q.includes("時期") || q.includes("年齢"))) level = "danger";
-  else if (strong || n >= 3) level = "caution";
   else if (q.includes("稀少・届出疾患") && q.includes("都道府県") && (q.includes("年齢") || q.includes("時期"))) level = "danger";
+  else if (strong || n >= 3) level = "caution";
   else if (q.includes("稀少・届出疾患") && q.includes("都道府県")) level = "caution";
   else if (n === 2 && !q.includes("性別")) level = "caution";
   return { level, factors: q };
