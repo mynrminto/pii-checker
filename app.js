@@ -1,4 +1,5 @@
-import { regexScan, ruleRewrite } from "./rules.js";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js";
+import { findDiseases } from "./diseases.js";
 import { loadCorpus } from "./rag.js";
 
 const $ = (s) => document.querySelector(s);
@@ -12,6 +13,10 @@ const JUDGE_SYSTEM = `あなたは日本の個人情報保護法と医療ガイ�
 出力例1: {"verdict":"danger","summary":"氏名と診断名が結びついており要配慮個人情報に当たる。","findings":[{"category":"要配慮個人情報","reason":"氏名付きで川崎病の診断が書かれている"},{"category":"個人情報","reason":"保護者の電話番号がある"}]}
 出力例2: {"verdict":"ok","summary":"一般的な医学的質問で個人を識別する情報はない。","findings":[]}
 summaryは判定対象に即した具体的な1文。categoryは 個人情報／要配慮個人情報／個人識別符号／組合せによる特定 のいずれか1つ。findingsは最大3件。例文をそのまま写さない。`;
+
+// 希少性推定（リストにない疾患名のみ）
+const RARITY_SYSTEM = `医学用語の希少性を推定する。各用語について、日本での患者数の目安を rare（概ね1万人未満、または感染症法の届出対象）/ common（それ以上）/ unknown（疾患名でない、または不明）で答える。
+出力はJSONのみ。例: {"ドラベ症候群":"rare","気管支喘息":"common","発熱":"unknown"}`;
 
 // 一般化専用（平文出力。説明や前置きを禁止）
 const REWRITE_SYSTEM = `医療文書の匿名化担当者として、与えられた文章を、個人が特定できないよう必要最小限で書き換える。
@@ -106,6 +111,25 @@ $("#go").onclick = async () => {
     try {
       await ensureEngine();
       judging = true;
+      // 2a) リストにない疾患らしき語の希少性を推定（AIの推定として表示、ルール判定を補完）
+      const listed = new Set(findDiseases(text).map((d) => d.name));
+      const cand = [...new Set((text.match(/[一-龥ァ-ヶーA-Za-z0-9・]{2,20}(症候群|病|症|炎|欠損症|欠乏症|異常症|腫|変性症|不全症|血症|尿症)(?![一-龥ァ-ヶ])/g) || []))]
+        .filter((w) => ![...listed].some((n) => w.includes(n) || n.includes(w)) && !/^(疾病|病院|症状|症例|炎症|既往症|合併症|感染症|診断|持病|難病|稀少疾患|指定難病)$/.test(w)).slice(0, 8);
+      if (cand.length) {
+        $("#st").textContent = "疾患の希少性を推定中…";
+        try {
+          const r = extractJson(await chat(RARITY_SYSTEM, cand.join("\n"), 200, () => {}));
+          const rare = cand.filter((w) => r[w] === "rare");
+          if (rare.length) {
+            for (const w of rare) hits.push({ type: "稀少・届出疾患", severity: "medium", basis: "AIの推定（リスト未収載・未確認）", excerpt: w, ai: true });
+            const c2 = comboRisk(hits, text);
+            state.combo = c2; state.hits = hits;
+            if (order[c2.level] > order[ruleVerdict]) { ruleVerdict = c2.level; state.verdict = c2.level; state.summary = ruleSummary(hits, keywords, c2); }
+            state.rw.notes.push(`AIの推定：「${rare.join("」「")}」は稀少疾患の可能性があります（リスト未収載のため未確認）。地域・年齢・時期との組合せに注意してください。`);
+            render(state);
+          }
+        } catch {}
+      }
       $("#st").textContent = "AI判定中…";
       const user = `機械検出: ${hits.map((h) => h.type).join("、") || "なし"} / 組合せリスク: ${combo.factors.join("+") || "なし"} / 要配慮の手がかり: ${keywords.join("、") || "なし"}\n\n判定対象:\n${text.slice(0, 2500)}`;
       const raw = await chat(JUDGE_SYSTEM, user, 350, (n) => { $("#st").textContent = `AI判定中… ${n} トークン`; });
@@ -204,7 +228,7 @@ function render(s) {
 
   if (s.hits.length || s.keywords.length) {
     h += `<div class="card"><b>機械検出</b><div>`;
-    for (const r of s.hits) h += `<span class="tag ${r.severity}">${esc(r.type)}: ${esc(r.excerpt)}</span>`;
+    for (const r of s.hits) h += `<span class="tag ${r.severity}${r.ai ? " ai" : ""}">${esc(r.type)}: ${esc(r.excerpt)}${r.ai ? "（AI推定）" : ""}</span>`;
     for (const k of s.keywords) h += `<span class="tag">要配慮の手がかり: ${esc(k)}</span>`;
     h += `</div></div>`;
   }
