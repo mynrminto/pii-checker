@@ -7,9 +7,11 @@ const VL = { ok: "入力して問題なし", caution: "注意（文脈次第で�
 const MODELS = { small: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC", medium: "Qwen2.5-3B-Instruct-q4f16_1-MLC" };
 
 // 判定専用の短いプロンプト（高速化のため、書き換えは頼まない）
-const JUDGE_SYSTEM = `日本の個人情報保護法と医療ガイダンスに基づき、テキストを外部AIやSNSに入力してよいか判定する。
-出力はJSONのみ: {"verdict":"danger|caution|ok","summary":"1文","findings":[{"category":"個人情報|要配慮個人情報|個人識別符号|組合せによる特定|該当なし","reason":"短く"}]}
-danger=氏名・連絡先・ID・個人識別符号、または個人と結びつく病歴・診断。caution=年齢・性別・地域・日付・施設・稀な疾患などの組合せで特定されうる。ok=個人を識別しうる情報なし。findingsは最大3件。`;
+const JUDGE_SYSTEM = `あなたは日本の個人情報保護法と医療ガイダンスに基づく審査員。テキストを外部AIやSNSに入力してよいか判定し、JSONだけを返す。
+判定: danger=氏名・連絡先・ID・個人識別符号、または個人と結びつく病歴・診断を含む / caution=年齢・性別・地域・日付・施設・稀な疾患などの組合せで特定されうる / ok=個人を識別しうる情報なし
+出力例1: {"verdict":"danger","summary":"氏名と診断名が結びついており要配慮個人情報に当たる。","findings":[{"category":"要配慮個人情報","reason":"氏名付きで川崎病の診断が書かれている"},{"category":"個人情報","reason":"保護者の電話番号がある"}]}
+出力例2: {"verdict":"ok","summary":"一般的な医学的質問で個人を識別する情報はない。","findings":[]}
+summaryは判定対象に即した具体的な1文。categoryは 個人情報／要配慮個人情報／個人識別符号／組合せによる特定 のいずれか1つ。findingsは最大3件。例文をそのまま写さない。`;
 
 // 一般化専用（平文出力。説明や前置きを禁止）
 const REWRITE_SYSTEM = `医療文書の匿名化担当者として、与えられた文章を、個人が特定できないよう必要最小限で書き換える。
@@ -111,8 +113,9 @@ $("#go").onclick = async () => {
       const order = { ok: 0, caution: 1, danger: 2 };
       const v = ["ok", "caution", "danger"].includes(j.verdict) ? j.verdict : ruleVerdict;
       state.verdict = order[v] > order[ruleVerdict] ? v : ruleVerdict;
-      state.summary = j.summary || state.summary;
-      state.findings = (j.findings || []).slice(0, 3);
+      const bad = (x) => !x || /\|/.test(x) || /^(1文|短く|理由)$/.test(x.trim());
+      state.summary = bad(j.summary) ? state.summary : j.summary;
+      state.findings = (j.findings || []).filter((f) => !bad(f.category) && !bad(f.reason)).slice(0, 3);
       state.ai = "done";
       render(state);
     } catch (e) {
