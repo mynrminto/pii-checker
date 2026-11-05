@@ -120,13 +120,6 @@ export function ruleRewrite(raw) {
     if (repl == null) continue;
     text = text.replace(re, (m) => { rec(m, repl, `${type}：${basis}`); return repl; });
   }
-  // 質問文なら、冒頭の患者属性だけの文（年齢・性別）を落として一般的な問いに組み替える
-  if (/[？?]|教えて|ください|でしょうか|ですか|とは$/.test(text)) {
-    const lead = /^(症例[:：]\s*)?((乳児|幼児|学童|思春)期|\d+代|100歳以上(（[^）]*）)?|乳児)?の?(男児|女児|男性|女性|男の子|女の子|患児|患者|小児)(で|が|に|の)?[。、．,]\s*/;
-    const m = text.match(lead);
-    if (m && m[0].length < text.length - 5) { text = text.slice(m[0].length); rec(m[0].replace(/[。、．,]\s*$/, ""), "（削除）", "一般的な質問に患者の年齢・性別は不要。疾患名・検査名は残し、属性の側を削る"); }
-    text = text.replace(/^(症例[:：]\s*)/, "");
-  }
   for (const d of findDiseases(text)) {
     if (d.severity === "low") notes.push(`「${d.name}」は指定難病ですが患者数が多く、単独では特異な記述になりにくい疾患です。小規模な地域名や正確な年齢・時期と組み合わせないよう注意してください。`);
     else notes.push(`「${d.name}」（${d.group}）は匿名加工情報の「特異な記述」に当たりえます。疾患名そのものは残して構いませんが、地域・正確な年齢・時期・施設を一緒に書かないでください。症例報告として出す場合は同意または倫理委員会承認の要否を検討してください。`);
