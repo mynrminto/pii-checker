@@ -90,12 +90,14 @@ $("#go").onclick = async () => {
   $("#go").disabled = true; $("#out").innerHTML = "";
 
   // 1) ルール層：検出・書き換え・根拠（即時）
-  const { hits, keywords } = regexScan(text);
+  const { hits, keywords, combo } = regexScan(text);
   const rw = ruleRewrite(text);
   lastRuleText = rw.text;
   const ctx = corpus ? corpus.search(text.slice(0, 1500), 3) : [];
-  const ruleVerdict = hits.some((h) => h.severity === "high") ? "danger" : (hits.length || keywords.length) ? "caution" : "ok";
-  const state = { verdict: ruleVerdict, summary: ruleSummary(hits, keywords), findings: [], hits, keywords, rw, ctx, ai: null };
+  const order = { ok: 0, caution: 1, danger: 2, none: 0 };
+  let ruleVerdict = hits.some((h) => h.severity === "high") ? "danger" : (hits.length || keywords.length) ? "caution" : "ok";
+  if (order[combo.level] > order[ruleVerdict]) ruleVerdict = combo.level;
+  const state = { verdict: ruleVerdict, summary: ruleSummary(hits, keywords, combo), findings: [], hits, keywords, combo, rw, ctx, ai: null };
   render(state);
 
   // 2) AI層：短い判定のみ（任意）
@@ -105,12 +107,11 @@ $("#go").onclick = async () => {
       await ensureEngine();
       judging = true;
       $("#st").textContent = "AI判定中…";
-      const user = `機械検出: ${hits.map((h) => h.type).join("、") || "なし"} / 要配慮の手がかり: ${keywords.join("、") || "なし"}\n\n判定対象:\n${text.slice(0, 2500)}`;
+      const user = `機械検出: ${hits.map((h) => h.type).join("、") || "なし"} / 組合せリスク: ${combo.factors.join("+") || "なし"} / 要配慮の手がかり: ${keywords.join("、") || "なし"}\n\n判定対象:\n${text.slice(0, 2500)}`;
       const raw = await chat(JUDGE_SYSTEM, user, 350, (n) => { $("#st").textContent = `AI判定中… ${n} トークン`; });
       let j;
       try { j = extractJson(raw); } catch { j = { verdict: ruleVerdict, summary: "AI出力を解析できませんでした（ルール判定を表示）", findings: [] }; }
       // 安全側：ルールが danger なら AI の緩い判定で下げない
-      const order = { ok: 0, caution: 1, danger: 2 };
       const v = ["ok", "caution", "danger"].includes(j.verdict) ? j.verdict : ruleVerdict;
       state.verdict = order[v] > order[ruleVerdict] ? v : ruleVerdict;
       const bad = (x) => !x || /\|/.test(x) || /^(1文|短く|理由)$/.test(x.trim());
@@ -126,9 +127,11 @@ $("#go").onclick = async () => {
   $("#go").disabled = false; $("#st").textContent = "";
 };
 
-function ruleSummary(hits, kws) {
+function ruleSummary(hits, kws, combo) {
   const high = hits.filter((h) => h.severity === "high").map((h) => h.type);
   if (high.length) return `直接識別子（${[...new Set(high)].join("、")}）を含みます。下の書き換え案を使ってください。`;
+  if (combo.level === "danger") return `単独の識別子はありませんが、${combo.factors.join("＋")}の組合せで事実上一人に特定されます（容易照合性・特異な記述）。`;
+  if (combo.level === "caution") return `${combo.factors.join("＋")}の組合せで特定されうる可能性があります。`;
   if (hits.length) return `単独では識別できませんが、${[...new Set(hits.map((h) => h.type))].join("、")}の組合せで特定されうる可能性があります。`;
   if (kws.length) return "識別子は検出されませんでしたが、要配慮情報に関わる語を含みます。個人と結びつく記述がないか確認してください。";
   return "個人を識別しうる情報は検出されませんでした。";
