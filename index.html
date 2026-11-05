@@ -78,6 +78,8 @@
     .flow,.ex{grid-template-columns:1fr}
     .arrow{transform:rotate(90deg);padding:4px 0}
   }
+  .refs ul{font-size:13.5px;line-height:1.75} .refs a{font-weight:600}
+  .finding .note a,.finding .note a:visited{color:var(--accent)}
   footer{margin-top:40px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 </style>
 </head>
@@ -132,7 +134,7 @@
         <ul><li>疾患名・検査・治療・薬剤（稀少疾患も）</li><li>年代（学童期、40代）</li><li>性別</li><li>症状と経過の論理</li></ul></div>
       <div class="col gen"><div class="col-t">一般化</div><div class="col-s">情報は残しつつ精度を落とす</div>
         <ul><li>5歳 → 幼児期、47歳 → 40代</li><li>2024年3月13日 → 基準日＋3日</li><li>116歳 → 100歳以上（同意要検討）</li><li>国内2例目 → 極めて稀な</li></ul></div>
-      <div class="col del"><div class="col-t">削る</div><div class="col-s">識別に直結し、臨床的な意味が薄い</div>
+      <div class="col del"><div class="col-t">削る</div><div class="col-s">識別に直結し、臨床的な意味が薄い（<a href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener">学会指針</a>）</div>
         <ul><li>氏名・イニシャル・ID・連絡先</li><li>市町村以下の地名、施設名、「当院」</li><li>受診日などの暦日、「昨日の当直で」</li><li>学校名・職業・家族構成</li></ul></div>
     </div>
 
@@ -145,7 +147,7 @@
 
     <div class="grid2">
       <div class="box soft"><div class="box-t">法律の視点：容易照合性</div><p>文章から氏名を消しても、書き手の手元にはカルテがあり照合できるため、法律上は書き手の側からは個人情報のままです。「外部から特定できないか」の前に「患者の記述を外に出す必要があるか」を考えます。</p></div>
-      <div class="box soft"><div class="box-t">入力先の視点：契約で決まる</div><p>個人契約の一般向けAIは入力が保持される規約が多く「第三者提供」に近い扱いです。「保存しない・学習に使わない」を契約で担保した組織契約なら「委託」。可否は院内規程で決まります（医療情報システム安全管理GL 7.0版 Q&amp;A 企画管理編 Q18）。</p></div>
+      <div class="box soft"><div class="box-t">入力先の視点：契約で決まる</div><p>個人契約の一般向けAIは入力が保持される規約が多く「第三者提供」に近い扱いです。「保存しない・学習に使わない」を契約で担保した組織契約なら「委託」。可否は院内規程で決まります（<a href="https://www.mhlw.go.jp/content/10808000/001716290.pdf" target="_blank" rel="noopener">医療情報システム安全管理GL 7.0版</a> Q&amp;A 企画管理編 Q18）。</p></div>
     </div>
 
     <h3><span class="num">2</span>ツールの仕組み — すべてブラウザの中で完結</h3>
@@ -172,7 +174,20 @@
         <div>患者、<b>幼児期</b>男児。<b>某日</b>に<b>一般病院</b>小児科へ発熱5日目で受診。川崎病と診断しIVIG投与。母親の連絡先<b>（電話番号削除）</b>。</div>
       </div>
     </div>
-    <p class="note">根拠：個人情報保護法、医療・介護関係事業者ガイダンス（令和8年4月改正）、医療情報システム安全管理ガイドライン第7.0版、学会の患者プライバシー保護指針、指定難病一覧（令和8年4月）</p>
+    <div class="box refs">
+      <div class="box-t">根拠となる資料（原典）</div>
+      <ul>
+        <li><a href="https://laws.e-gov.go.jp/law/415AC0000000057" target="_blank" rel="noopener">個人情報の保護に関する法律</a>（e-Gov 法令検索）— 個人情報・個人識別符号・要配慮個人情報・仮名加工／匿名加工情報の定義</li>
+        <li><a href="https://www.ppc.go.jp/personalinfo/legal/iryoukaigo_guidance/" target="_blank" rel="noopener">医療・介護関係事業者における個人情報の適切な取扱いのためのガイダンス</a>（個人情報保護委員会・厚生労働省、令和8年4月一部改正）</li>
+        <li><a href="https://www.mhlw.go.jp/content/10808000/001716290.pdf" target="_blank" rel="noopener">医療情報システムの安全管理に関するガイドライン 第7.0版（概説編）</a>（厚生労働省、2026年6月）— 企画管理編・Q&amp;A（企画管理編 Q18）は同ページ掲載</li>
+        <li><a href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener">症例報告を含む医学論文及び学会研究会発表における患者プライバシー保護に関する指針</a>（外科関連学会協議会、平成27年改正）— 氏名・住所・日付・施設名・顔写真の扱い</li>
+        <li><a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000084783.html" target="_blank" rel="noopener">指定難病の一覧（告示番号1〜348）</a>（厚生労働省、令和8年4月時点）— 稀少疾患リストの出典</li>
+        <li><a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/kekkaku-kansenshou11/01.html" target="_blank" rel="noopener">感染症法に基づく医師の届出</a>（厚生労働省）— 届出・公表対象感染症の出典</li>
+        <li><a href="https://www8.cao.go.jp/iryou/hourei/pdf/guideline.pdf" target="_blank" rel="noopener">次世代医療基盤法ガイドライン</a>（内閣府ほか、令和8年10月改定）— 匿名加工・仮名加工の加工基準</li>
+        <li><a href="https://www.ppc.go.jp/personalinfo/legal/guidelines_anonymous/" target="_blank" rel="noopener">個人情報保護法ガイドライン（仮名加工情報・匿名加工情報編）</a>（個人情報保護委員会）— 「特異な記述」の削除</li>
+      </ul>
+      <p class="note">URL は 2026年11月5日時点。改版でページが移動することがあるため、見つからない場合は資料名で検索してください。</p>
+    </div>
   </section>
 
   <footer>
@@ -180,6 +195,6 @@
     ソースコード: <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
   </footer>
 </main>
-<script type="module" src="app.js?v=18"></script>
+<script type="module" src="app.js?v=19"></script>
 </body>
 </html>

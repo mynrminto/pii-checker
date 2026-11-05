@@ -1,6 +1,6 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=18";
-import { findDiseases } from "./diseases.js?v=18";
-import { loadCorpus } from "./rag.js?v=18";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=19";
+import { findDiseases } from "./diseases.js?v=19";
+import { loadCorpus } from "./rag.js?v=19";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -221,6 +221,21 @@ function diffWords(a, b) {
   return merged;
 }
 
+// 変更理由の中の根拠名をリンクにする
+const REF_LINKS = [
+  [/学会指針\d?/g, "https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf"],
+  [/法2条\d項/g, "https://laws.e-gov.go.jp/law/415AC0000000057"],
+  [/匿名加工情報編GL/g, "https://www.ppc.go.jp/personalinfo/legal/guidelines_anonymous/"],
+  [/感染症法/g, "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/kekkaku-kansenshou11/01.html"],
+  [/指定難病/g, "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000084783.html"],
+  [/医療・介護ガイダンス/g, "https://www.ppc.go.jp/personalinfo/legal/iryoukaigo_guidance/"],
+];
+function linkify(text) {
+  let h = esc(text);
+  for (const [re, url] of REF_LINKS) h = h.replace(re, (m) => `<a href="${url}" target="_blank" rel="noopener">${m}</a>`);
+  return h;
+}
+
 // ---------- 描画 ----------
 function render(s) {
   const v = s.verdict;
@@ -236,9 +251,9 @@ function render(s) {
       <textarea id="rw" readonly>${esc(s.rw.text)}</textarea>
       <div class="row"><button id="cp" class="ghost" data-src="rw">コピー</button>`;
     h += `<span class="note">書き換え後も必ず自分の目で確認してください。稀な経過や特異な数値の一般化は人の判断で行ってください</span></div>`;
-    for (const n of s.rw.notes) h += `<div class="warn-inline">⚠ ${esc(n)}</div>`;
+    for (const n of s.rw.notes) h += `<div class="warn-inline">⚠ ${linkify(n)}</div>`;
     h += `<b>変更箇所と理由</b>`;
-    for (const c of s.rw.changes) h += `<div class="finding"><span class="before">${esc(c.before)}</span> → <span class="after">${esc(c.after)}</span><div class="note">${esc(c.reason)}</div></div>`;
+    for (const c of s.rw.changes) h += `<div class="finding"><span class="before">${esc(c.before)}</span> → <span class="after">${esc(c.after)}</span><div class="note">${linkify(c.reason)}</div></div>`;
     h += `</div>`;
   } else if (s.verdict !== "ok" && s.combo.level !== "none") {
     h += `<div class="card"><b>書き換え案</b><div class="note">ルールで置換できる直接識別子はありませんでした。年齢・地域・時期・稀な特徴の組合せを見直してください。</div>`;
