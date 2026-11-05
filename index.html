@@ -42,6 +42,42 @@
   .tag.ai{border-style:dashed}
   .warn-inline{font-size:13px;color:var(--caution);margin:6px 0}
   .diff{font-size:13px;line-height:1.8;padding:8px 10px;border:1px dashed var(--line);border-radius:6px;margin-top:6px;white-space:pre-wrap}
+  /* ---- インフォグラフィック ---- */
+  .info{margin-top:56px;padding-top:32px;border-top:2px solid var(--line);display:flex;flex-direction:column;gap:18px}
+  .info .eyebrow{font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--accent)}
+  .info h2{font-size:26px;font-weight:900;margin:4px 0 6px;line-height:1.3}
+  .info h3{font-size:19px;font-weight:700;margin:14px 0 0;display:flex;align-items:center;gap:10px}
+  .info .num{width:28px;height:28px;border-radius:50%;background:var(--fg);color:var(--bg);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex:none}
+  .info p{margin:0;font-size:14px;line-height:1.7}
+  .info ul{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.8}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .col{background:var(--card);border:1px solid var(--line);border-top-width:5px;border-radius:10px;padding:14px 16px}
+  .col.keep{border-top-color:var(--ok)} .col.gen{border-top-color:var(--caution)} .col.del{border-top-color:var(--danger)}
+  .col-t{font-size:18px;font-weight:900} .keep .col-t{color:var(--ok)} .gen .col-t{color:var(--caution)} .del .col-t{color:var(--danger)}
+  .col-s{font-size:12px;color:var(--muted);margin-top:2px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+  .box.soft{background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+  .box.dark{background:var(--fg);color:var(--bg)}
+  .box-t{font-size:15px;font-weight:700} .box-l{font-size:12px;font-weight:700;letter-spacing:.1em;opacity:.7}
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:900;color:var(--muted)}
+  .chip{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700;color:#fff}
+  .chip.warn{background:#FDEBD0;color:#7A4F10} .chip.good{background:#D5F5E3;color:#1E5B38}
+  .chip.bad{background:var(--danger)} .chip.ok{background:var(--ok)} .chip.warn2{background:var(--caution)}
+  .chips{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+  .flow{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr 28px 1fr;align-items:stretch}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+  .step.rule{border:2px solid var(--accent)} .step.ai{border:2px dashed var(--caution)}
+  .step-l{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted)} .rule .step-l{color:var(--accent)} .ai .step-l{color:var(--caution)}
+  .step-t{font-size:15px;font-weight:700} .step p{font-size:12.5px}
+  .arrow{display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:var(--muted)}
+  .ex{display:grid;grid-template-columns:1fr 36px 1fr;align-items:center;font-size:14px;line-height:1.8}
+  .ex i{font-style:normal;color:#F5B7B1} .ex b{color:#ABEBC6}
+  @media (max-width:720px){
+    .grid3,.grid2{grid-template-columns:1fr}
+    .flow,.ex{grid-template-columns:1fr}
+    .arrow{transform:rotate(90deg);padding:4px 0}
+  }
   footer{margin-top:40px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 </style>
 </head>
@@ -82,11 +118,68 @@
   <p class="note" id="st"></p>
   <div id="out"></div>
 
+  <!-- ===== インフォグラフィック：考え方と仕組み ===== -->
+  <section class="info" aria-labelledby="info-h">
+    <div class="info-head">
+      <div class="eyebrow">考え方と仕組み</div>
+      <h2 id="info-h">外部AIに貼る前の匿名化</h2>
+      <p>原則は<b>必要十分な最低限の匿名化</b>。個人を特定できなくするために必要な部分だけを削り、臨床的に意味のある情報は最大限残します。</p>
+    </div>
+
+    <h3><span class="num">1</span>残す・一般化・削る</h3>
+    <div class="grid3">
+      <div class="col keep"><div class="col-t">残す</div><div class="col-s">臨床的に意味があり、識別子にならない</div>
+        <ul><li>疾患名・検査・治療・薬剤（稀少疾患も）</li><li>年代（学童期、40代）</li><li>性別</li><li>症状と経過の論理</li></ul></div>
+      <div class="col gen"><div class="col-t">一般化</div><div class="col-s">情報は残しつつ精度を落とす</div>
+        <ul><li>5歳 → 幼児期、47歳 → 40代</li><li>2024年3月13日 → 基準日＋3日</li><li>116歳 → 100歳以上（同意要検討）</li><li>国内2例目 → 極めて稀な</li></ul></div>
+      <div class="col del"><div class="col-t">削る</div><div class="col-s">識別に直結し、臨床的な意味が薄い</div>
+        <ul><li>氏名・イニシャル・ID・連絡先</li><li>市町村以下の地名、施設名、「当院」</li><li>受診日などの暦日、「昨日の当直で」</li><li>学校名・職業・家族構成</li></ul></div>
+    </div>
+
+    <div class="box">
+      <div class="box-t">単独では無害でも、組合せで一人になる</div>
+      <p>氏名がなくても準識別子が重なると特定されます。稀少疾患や届出・公表される感染症は、公的な発表と照合されやすい「特異な記述」です。</p>
+      <div class="chain"><span class="chip warn">116歳</span>＋<span class="chip warn">屋久島</span>＋<span class="chip warn">ジカ熱</span>＝<span class="chip bad">事実上一人に特定</span></div>
+      <div class="chain"><span class="chip good">100歳以上</span>＋<span class="chip good">（地名削除）</span>＋<span class="chip good">ジカ熱</span>＝<span class="chip ok">疾患の情報は残る</span></div>
+    </div>
+
+    <div class="grid2">
+      <div class="box soft"><div class="box-t">法律の視点：容易照合性</div><p>文章から氏名を消しても、書き手の手元にはカルテがあり照合できるため、法律上は書き手の側からは個人情報のままです。「外部から特定できないか」の前に「患者の記述を外に出す必要があるか」を考えます。</p></div>
+      <div class="box soft"><div class="box-t">入力先の視点：契約で決まる</div><p>個人契約の一般向けAIは入力が保持される規約が多く「第三者提供」に近い扱いです。「保存しない・学習に使わない」を契約で担保した組織契約なら「委託」。可否は院内規程で決まります（医療情報システム安全管理GL 7.0版 Q&amp;A 企画管理編 Q18）。</p></div>
+    </div>
+
+    <h3><span class="num">2</span>ツールの仕組み — すべてブラウザの中で完結</h3>
+    <div class="flow">
+      <div class="step"><div class="step-l">入力</div><div class="step-t">貼り付けたテキスト</div><p>症例要約、質問文、発表原稿など。どこにも送信・保存されません。</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step rule"><div class="step-l">ルール層（即時・決定論的）</div><div class="step-t">検出・書き換え・根拠</div><p>正規表現で氏名・連絡先・地名・日付・年齢を検出。指定難病348＋届出感染症のリストで特異な記述を判定。組合せを評価し、書き換え文と変更理由を生成。</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step ai"><div class="step-l">AI層（WebGPU・任意）</div><div class="step-t">短い判定と希少性推定</div><p>小型LLM（1.5〜3B）をブラウザ内で実行。文脈を読んだ所見と、リスト未収載の疾患名の希少性を推定。ルールの「入力不可」は下げません。</p></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="step"><div class="step-l">出力</div><div class="chips"><span class="chip bad">入力不可</span><span class="chip warn2">注意</span><span class="chip ok">問題なし</span></div><p>判定＋書き換え案＋変更箇所と理由。コピーしてそのまま使えます。</p></div>
+    </div>
+
+    <div class="grid2">
+      <div class="box"><div class="box-t">なぜ「書き換え」はルールに任せるのか</div><p>ブラウザで動く小型モデルに文章を書き換えさせると「質問に答える」か「一字も変えない」かになり、稀少疾患名を消してしまうこともありました。確実性と根拠が要る工程は決定論的に、文脈の判断だけをAIに任せています。</p></div>
+      <div class="box"><div class="box-t">送信していないことを自分で確かめられる</div><p>静的サイトでサーバーが存在しません。判定中の外部通信件数をページ上部に表示し、Wi-Fiを切っても動作します。広告・アクセス解析なし、ソースコードは公開。</p></div>
+    </div>
+
+    <div class="box dark">
+      <div class="box-l">書き換えの例</div>
+      <div class="ex">
+        <div>山田太郎くん、<i>5歳</i>男児。<i>2024年3月10日</i>に<i>大阪府堺市</i>の<i>当院</i>小児科へ発熱5日目で受診。川崎病と診断しIVIG投与。母親の連絡先 <i>090-1234-5678</i>。</div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div>患者、<b>幼児期</b>男児。<b>某日</b>に<b>一般病院</b>小児科へ発熱5日目で受診。川崎病と診断しIVIG投与。母親の連絡先<b>（電話番号削除）</b>。</div>
+      </div>
+    </div>
+    <p class="note">根拠：個人情報保護法、医療・介護関係事業者ガイダンス（令和8年4月改正）、医療情報システム安全管理ガイドライン第7.0版、学会の患者プライバシー保護指針、指定難病一覧（令和8年4月）</p>
+  </section>
+
   <footer>
     <span id="corpus"></span> ・ 広告・アクセス解析なし ・ 本ツールはスクリーニング目的の参考情報であり、安全性や法令適合を保証しません。最終判断は入力先の規約と所属組織の規程に従ってください。<br>
     ソースコード: <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
   </footer>
 </main>
-<script type="module" src="app.js?v=17"></script>
+<script type="module" src="app.js?v=18"></script>
 </body>
 </html>

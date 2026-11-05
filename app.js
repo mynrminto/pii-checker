@@ -1,6 +1,6 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=17";
-import { findDiseases } from "./diseases.js?v=17";
-import { loadCorpus } from "./rag.js?v=17";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=18";
+import { findDiseases } from "./diseases.js?v=18";
+import { loadCorpus } from "./rag.js?v=18";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
