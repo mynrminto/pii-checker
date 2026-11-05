@@ -83,6 +83,8 @@ export function ruleRewrite(raw) {
     if (repl == null) continue;
     text = text.replace(re, (m) => { rec(m, repl, `${type}：${basis}`); return repl; });
   }
+  // 置換で生じた不自然な助詞を整える
+  text = text.replace(/（地域削除）の/g, "").replace(/にの/g, "に").replace(/\s+（電話番号削除）/g, "（電話番号削除）");
   // 重複する変更をまとめる
   const seen = new Set();
   const uniq = changes.filter((c) => { const k = c.before + "→" + c.after; if (seen.has(k)) return false; seen.add(k); return true; });
