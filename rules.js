@@ -1,5 +1,6 @@
 // ルール層 — 機械検出と決定論的な書き換え。どの端末でも瞬時に動き、結果が再現できる。
-import { findDiseases } from "./diseases.js?v=19";
+import { findDiseases } from "./diseases.js?v=20";
+import { SURNAMES } from "./surnames.js?v=20";
 
 const NUM = "[0-9０-９]";
 const toHalf = (s) => s.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
@@ -24,14 +25,45 @@ export const PATTERNS = [
   ["施設名", /[一-龥ァ-ヶー]{2,10}(大学(?:医学部)?附属病院|大学病院|総合病院|医療センター|こども病院|小児病院|病院|クリニック|医院|診療所)/g, "medium", "某施設", "学会指針5 施設名は記載しない"],
   ["自施設の表現", /(当院|本院|当科|当センター|弊院)/g, "low", "一般病院", "容易照合性（書き手の施設が分かる）"],
   ["学校・園名", /[一-龥ァ-ヶー]{2,10}(小学校|中学校|高校|高等学校|保育園|幼稚園|こども園)/g, "medium", "学校", "組合せによる特定"],
-  ["地名", /(?<![一-龥])([一-龥ァ-ヶー]{2,5})(島|半島|市|区|町|村|郡|諸島)(?![立民場街役販中域分別切画])/g, "medium", "（地名削除）", "学会指針2 住所は記載しない（小規模地域は特に）"],
+  ["地名", /(?<![一-龥])([一-龥ァ-ヶー]{1,5})(島|半島|市|区|町|村|郡|諸島)(?![立民場街役販中域分別切画])/g, "medium", "（地名削除）", "学会指針2 住所は記載しない（小規模地域は特に）"],
   ["稀少・届出疾患", null, "medium", null, "匿名加工情報編GL 特異な記述／感染症法の届出・公表疾患"],
+  ["特異な記述（症例数）", /(国内|本邦|世界|県内|府内|都内|道内|当院|当科|日本)(で|では|初|初めて)?(初|初めて|初例|第?\d+例目|\d+例目|最年少|最高齢|最年長)/g, "medium", null, "匿名加工情報編GL 特異な記述"],
+  ["特異な記述（極端な数値）", /(身長\s*(?:1[9]\d|2\d\d)\s*cm|身長\s*(?:[1-9]\d|1[0-2]\d)\s*cm(?=.{0,6}(成人|男性|女性))|体重\s*(?:1[2-9]\d|[2-9]\d\d)\s*kg|出生体重\s*(?:[1-4]\d\d|[5-9]\d)\s*g|在胎\s*2[2-4]\s*週|体重\s*[1-2]\d\s*kg(?=.{0,6}(成人|男性|女性)))/g, "medium", null, "匿名加工情報編GL 特異な記述（極端な数値）"],
+  ["職業・肩書き", /(父|母|本人|祖父|祖母|保護者|両親|夫|妻|親)(親)?(は|が|の)?\s*(市議会?議員|県議会?議員|町議会?議員|国会議員|議員|市長|町長|村長|知事|首長|社長|会長|理事長|院長|校長|教頭|住職|神主|牧師|アナウンサー|芸能人|俳優|タレント|歌手|プロ野球選手|プロサッカー選手|力士|プロ選手|オリンピック|医師|歯科医師|看護師|薬剤師|教員|教師|教授|警察官|消防士|自衛官|弁護士|裁判官|検事|公務員|パイロット|僧侶|農家|漁師)/g, "medium", null, "組合せによる特定（職業）"],
+  ["家族構成", /(双子|三つ子|四つ子|ふたご|みつご|一卵性|二卵性|\d人(兄弟|姉妹|きょうだい)|(兄弟|姉妹|きょうだい)\d人|(第|)\d(子|人目)|末っ子|一人っ子|ひとりっ子|里子|養子|母子家庭|父子家庭|ひとり親|シングルマザー|シングルファーザー)/g, "low", null, "組合せによる特定（家族構成）"],
   ["月齢", /生後\s*(\d{1,2})\s*(か月|ヶ月|カ月|ヵ月|日)/g, "medium", null, "小児：月齢は強い識別子"],
   ["年齢", /(?<![\d.])(\d{1,3})\s*歳/g, "medium", null, "容易照合性"],
 ];
 
 // 地名として扱わない一般語
-const PLACE_STOP = new Set(["都市", "市販", "市中", "市立", "市民", "市場", "市街", "市内", "市外", "市役", "区域", "区分", "地区", "学区", "区別", "区切", "区画", "区内", "全市", "他市", "当市", "本市", "同市", "各市", "区立", "特別区", "行政区", "病区", "離島", "無人島", "半島", "列島", "諸島", "本島", "全島", "島内", "島外", "小島", "孤島", "町内", "町立", "町民", "村立", "村民", "村落", "郡部", "市町村", "区町村", "町村", "寒村", "農村", "漁村", "山村", "島嶼", "群島", "属島", "周辺島"]);
+const PLACE_STOP = new Set(["当区","同区","各区","全区","他区","本区","一区","二区","三区","四区","五区","新区","旧区","港区","北区","南区","東区","西区","中区","中央区","一島","二島","半島","本町","一町","二町","三町","新町","旧町","一村","二村","新村","旧村","都市", "市販", "市中", "市立", "市民", "市場", "市街", "市内", "市外", "市役", "区域", "区分", "地区", "学区", "区別", "区切", "区画", "区内", "全市", "他市", "当市", "本市", "同市", "各市", "区立", "特別区", "行政区", "病区", "離島", "無人島", "半島", "列島", "諸島", "本島", "全島", "島内", "島外", "小島", "孤島", "町内", "町立", "町民", "村立", "村民", "村落", "郡部", "市町村", "区町村", "町村", "寒村", "農村", "漁村", "山村", "島嶼", "群島", "属島", "周辺島"]);
+
+// ---- 敬称なしの氏名（姓辞書＋後続パターン） ----
+const SN = [...new Set(SURNAMES.filter((n) => n.length >= 2))].sort((a, b) => b.length - a.length);
+const SN_RE = new RegExp("(?<![一-龥ァ-ヶ])(" + SN.join("|") + ")", "g");
+const ORG_AFTER = /^(病院|医院|小児科|内科|外科|クリニック|診療所|医療センター|大学|市|区|町|村|郡|駅|川|山|橋|通|銀行|製薬|製作所|商店|株式|学校|小学校|中学校|高校|幼稚園|保育園|薬局|薬品|電機|建設|工業|組|屋|家|流|派|式|法|反応|徴候|症候群|病$)/;
+const GIVEN = /^[ 　]?([一-龥]{1,3}|[ぁ-ん]{2,4}|[ァ-ヶー]{2,5})/;
+const BOUNDARY = /^(さん|様|氏|君|ちゃん|くん|先生|医師|患者|は|が|の|を|に|と|も|へ|から|、|。|，|．|\s|$|\d|（|\(|[A-Za-z]|・)/;
+export function findNames(text) {
+  const out = [];
+  for (const m of text.matchAll(SN_RE)) {
+    const start = m.index, sur = m[1];
+    let rest = text.slice(start + sur.length);
+    if (ORG_AFTER.test(rest)) continue;
+    let end = start + sur.length, hasGiven = false;
+    const g = rest.match(GIVEN);
+    if (g && BOUNDARY.test(rest.slice(g[0].length)) && !ORG_AFTER.test(g[1]) && !/^(先生|医師|教授|部長|院長|看護師|薬剤師|技師|主任|係長|課長)$/.test(g[1])) { end += g[0].length; hasGiven = true; rest = rest.slice(g[0].length); }
+    if (!hasGiven && !BOUNDARY.test(rest)) continue;
+    // 姓のみ＋助詞は弱め（「佐藤は」）。姓＋名、または敬称付きは強め
+    const honor = /^(さん|様|氏|君|ちゃん|くん|先生|医師)/.test(rest);
+    out.push({ start, end, text: text.slice(start, end), strong: hasGiven || honor });
+  }
+  // 重なりを除去（長い方を優先）
+  out.sort((a, b) => a.start - b.start || b.end - a.end);
+  const res = []; let last = -1;
+  for (const o of out) { if (o.start >= last) { res.push(o); last = o.end; } }
+  return res;
+}
 
 export const SENSITIVE_WORDS = [
   "病名", "診断", "既往", "障害", "精神", "HIV", "遺伝", "犯罪", "前科",
@@ -58,9 +90,13 @@ export function regexScan(raw) {
     for (const m of text.matchAll(re)) {
       const s = m[0];
       if (type === "地名" && PLACE_STOP.has(s)) continue;
-      hits.push({ type, severity, basis, excerpt: s.length > 8 ? s.slice(0, 4) + "…" + s.slice(-2) : s });
+      hits.push({ type, severity, basis, raw: s, excerpt: s.length > 8 ? s.slice(0, 4) + "…" + s.slice(-2) : s });
     }
   }
+  // 住所として検出済みの文字列に含まれる地名は重複なので落とす
+  const addr = hits.filter((h) => h.type === "住所").map((h) => h.raw);
+  for (let i = hits.length - 1; i >= 0; i--) if (hits[i].type === "地名" && addr.some((a) => a.includes(hits[i].raw))) hits.splice(i, 1);
+  for (const n of findNames(text)) hits.push({ type: n.strong ? "氏名" : "姓のみ", severity: n.strong ? "high" : "medium", basis: "学会指針1 氏名は記載しない", excerpt: n.text });
   for (const d of findDiseases(text)) hits.push({ type: d.severity === "low" ? "指定難病（患者数多）" : "稀少・届出疾患", severity: d.severity, basis: `${d.group}：匿名加工情報編GL「特異な記述」`, excerpt: d.name });
   const keywords = SENSITIVE_WORDS.filter((w) => text.includes(w));
   return { hits, keywords, combo: comboRisk(hits, text) };
@@ -77,10 +113,16 @@ export function comboRisk(hits, text) {
   if (has("日付（年月日）") || has("日付（年月）") || has("相対的な時期")) q.push("時期");
   if (has("施設名") || has("自施設の表現")) q.push("施設");
   if (has("学校・園名")) q.push("学校");
+  if (has("特異な記述（症例数）") || has("特異な記述（極端な数値）")) q.push("特異な記述");
+  if (has("職業・肩書き")) q.push("職業");
+  if (has("家族構成")) q.push("家族構成");
   if (/(男性|女性|男児|女児|男の子|女の子)/.test(text)) q.push("性別");
   let level = "none";
   const n = q.length;
-  const strong = q.includes("稀少・届出疾患") && q.includes("地域");
+  const strong = (q.includes("稀少・届出疾患") || q.includes("特異な記述")) && q.includes("地域");
+  if (q.includes("特異な記述") && (q.includes("職業") || q.includes("家族構成") || q.includes("地域") || q.includes("時期") || q.includes("稀少・届出疾患"))) return { level: "danger", factors: q };
+  if (q.includes("職業") && (q.includes("地域") || q.includes("都道府県") || q.includes("稀少・届出疾患"))) return { level: "danger", factors: q };
+  if (q.includes("職業")) return { level: "caution", factors: q };
   if (strong && (q.includes("極端な年齢") || q.includes("時期") || q.includes("年齢"))) level = "danger";
   else if (q.includes("稀少・届出疾患") && q.includes("都道府県") && (q.includes("年齢") || q.includes("時期"))) level = "danger";
   else if (strong || n >= 3) level = "caution";
@@ -110,6 +152,18 @@ export function ruleRewrite(raw) {
       });
     }
   }
+  // 敬称なしの氏名（姓辞書）→ 患者。後ろから置換して位置ずれを防ぐ
+  for (const n of findNames(text).reverse()) {
+    const tail = text.slice(n.end), head = text.slice(0, n.start);
+    const honor = tail.match(/^(さん|様|氏|君|ちゃん|くん|先生|医師)/);
+    const cut = honor ? honor[0].length : 0;
+    let after = "患者";
+    if (honor && /先生|医師/.test(honor[0])) after = "担当医";
+    else if (/^[ \u3000]*(が|は|も)?(担当|主治|医師|先生|教授|看護|薬剤師|技師)/.test(tail.slice(cut))) after = "某医師";
+    else if (/(患者|患児|母|父|保護者|祖母|祖父|兄|姉|弟|妹)[ \u3000]*$/.test(head)) after = "";
+    text = head.replace(/[ \u3000]+$/, after ? "$&" : "") + after + text.slice(n.end + cut);
+    rec(n.text + (honor ? honor[0] : ""), after || "（削除）", "氏名：学会指針1 氏名・呼び名は記載しない");
+  }
   for (const [type, re, , repl, basis] of PATTERNS) {
     if (!re) continue;
     re.lastIndex = 0;
@@ -131,9 +185,17 @@ export function ruleRewrite(raw) {
       text = text.replace(re, (m) => { rec(m, "乳児期", `月齢は「乳児期」に一般化（${basis}）`); return "乳児期"; });
       continue;
     }
+    if (type === "職業・肩書き") {
+      text = text.replace(re, (m, rel, oya) => { const after = `${rel}${oya || ""}（職業削除）`; rec(m, after, `職業・肩書きは識別に直結するため削除（${basis}）。診療上不可欠なら一般化して戻す`); return after; });
+      continue;
+    }
     if (repl == null) continue;
     text = text.replace(re, (m) => { rec(m, repl, `${type}：${basis}`); return repl; });
   }
+  if (/(国内|本邦|世界|県内|府内|都内|道内|当院|当科|日本)(で|では)?(初|初めて|初例|第?\d+例目|\d+例目|最年少|最高齢|最年長)/.test(text)) notes.push("「国内○例目」「県内初」などの症例数・順位は匿名加工情報の「特異な記述」です。「極めて稀な」「報告例が少ない」に言い換えるか、同意または倫理委員会承認の要否を検討してください。");
+  if (/(父|母|本人|祖父|祖母|保護者|両親|夫|妻|親)(親)?(は|が|の)?\s*[一-龥]{0,4}(議員|市長|町長|村長|知事|社長|会長|理事長|院長|校長|芸能人|俳優|タレント|歌手|力士|プロ|アナウンサー|医師|教員|教師|警察官|弁護士)/.test(text)) notes.push("家族や本人の職業・肩書きは、地域や疾患と組み合わさると強い識別子になります。診療上不可欠でなければ削除してください。");
+  if (/(身長\s*(?:1[9]\d|2\d\d)\s*cm|体重\s*(?:1[2-9]\d|[2-9]\d\d)\s*kg|出生体重\s*(?:[1-4]\d\d|[5-9]\d)\s*g|在胎\s*2[2-4]\s*週)/.test(text)) notes.push("極端な数値（身長・体重・在胎週数など）は匿名加工情報の「特異な記述」になりえます。幅のある表現（「超低出生体重児」「極端な高身長」）に置き換えることを検討してください。");
+  if (/(双子|三つ子|ふたご|みつご|\d人(兄弟|姉妹|きょうだい)|母子家庭|父子家庭|ひとり親|里子|養子)/.test(text)) notes.push("家族構成（多胎、きょうだいの人数、養育環境）は地域と組み合わさると特定につながります。診療上必要な範囲に留めてください。");
   for (const d of findDiseases(text)) {
     if (d.severity === "low") notes.push(`「${d.name}」は指定難病ですが患者数が多く、単独では特異な記述になりにくい疾患です。小規模な地域名や正確な年齢・時期と組み合わせないよう注意してください。`);
     else notes.push(`「${d.name}」（${d.group}）は匿名加工情報の「特異な記述」に当たりえます。疾患名そのものは残して構いませんが、地域・正確な年齢・時期・施設を一緒に書かないでください。症例報告として出す場合は同意または倫理委員会承認の要否を検討してください。`);

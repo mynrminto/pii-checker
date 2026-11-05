@@ -1,11 +1,11 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=19";
-import { findDiseases } from "./diseases.js?v=19";
-import { loadCorpus } from "./rag.js?v=19";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=20";
+import { findDiseases } from "./diseases.js?v=20";
+import { loadCorpus } from "./rag.js?v=20";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const VL = { ok: "入力して問題なし", caution: "注意（文脈次第で特定されうる）", danger: "入力不可（個人情報／要配慮情報を含む）" };
-const MODELS = { small: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC", medium: "Qwen2.5-3B-Instruct-q4f16_1-MLC" };
+const MODEL = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 
 // 判定専用の短いプロンプト（高速化のため、書き換えは頼まない）
 const JUDGE_SYSTEM = `あなたは日本の個人情報保護法と医療ガイダンスに基づく審査員。テキストを外部AIやSNSに入力してよいか判定し、JSONだけを返す。
@@ -64,7 +64,7 @@ addEventListener("online", updateOnline); addEventListener("offline", updateOnli
 })();
 
 async function ensureEngine() {
-  const id = MODELS[$("#size").value];
+  const id = MODEL;
   if (engine && loadedModel === id) return engine;
   if (!webllm) webllm = await import("https://esm.run/@mlc-ai/web-llm");
   $("#st").textContent = "モデル読み込み中…";
@@ -109,7 +109,7 @@ $("#go").onclick = async () => {
   const strongHits = hits.filter((h) => !WEAK.has(h.type));
   let ruleVerdict = hits.some((h) => h.severity === "high") ? "danger" : strongHits.length ? "caution" : "ok";
   if (order[combo.level] > order[ruleVerdict]) ruleVerdict = combo.level;
-  const state = { verdict: ruleVerdict, summary: ruleSummary(hits, keywords, combo), findings: [], hits, keywords, combo, rw, ctx, ai: null };
+  const state = { verdict: ruleVerdict, basis: ruleBasis(hits, combo, ruleVerdict), summary: ruleSummary(hits, keywords, combo), findings: [], hits, keywords, combo, rw, ctx, ai: null };
   render(state);
 
   // 2) AI層：短い判定のみ（任意）
@@ -162,6 +162,16 @@ $("#go").onclick = async () => {
   }
   $("#go").disabled = false; $("#st").textContent = "";
 };
+
+// verdict 直下の一行（ルール根拠のみ。AIの文で上書きされない）
+function ruleBasis(hits, combo, v) {
+  const high = [...new Set(hits.filter((h) => h.severity === "high").map((h) => h.type))];
+  if (high.length) return `直接識別子：${high.join("・")}`;
+  if (combo.level !== "none") return `組合せ：${combo.factors.join("＋")}`;
+  const med = [...new Set(hits.filter((h) => h.severity === "medium").map((h) => h.type))];
+  if (med.length) return `検出：${med.join("・")}（単独では識別しない）`;
+  return "識別子・準識別子の組合せは検出なし";
+}
 
 function ruleSummary(hits, kws, combo) {
   const high = hits.filter((h) => h.severity === "high").map((h) => h.type);
@@ -221,6 +231,16 @@ function diffWords(a, b) {
   return merged;
 }
 
+// 書き換え文の中で変更箇所をハイライト
+function highlightRewrite(rw) {
+  const afters = [...new Set(rw.changes.map((c) => c.after).filter((x) => x && x !== "（削除）"))].sort((a, b) => b.length - a.length);
+  if (!afters.length) return esc(rw.text);
+  const re = new RegExp(afters.map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
+  let out = "", last = 0;
+  for (const m of rw.text.matchAll(re)) { out += esc(rw.text.slice(last, m.index)) + `<mark>${esc(m[0])}</mark>`; last = m.index + m[0].length; }
+  return out + esc(rw.text.slice(last));
+}
+
 // 変更理由の中の根拠名をリンクにする
 const REF_LINKS = [
   [/学会指針\d?/g, "https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf"],
@@ -242,13 +262,15 @@ function render(s) {
   let h = `<div class="card"><span class="verdict v-${v}">${VL[v]}</span>`;
   if (s.ai === null && $("#llm").checked && navigator.gpu) h += `<span class="note"> ルール判定（AI判定を実行中）</span>`;
   else if (s.ai && s.ai.startsWith("error")) h += `<span class="note err"> AI判定失敗: ${esc(s.ai.slice(7))}（ルール判定を表示）</span>`;
+  h += `<div class="basis">${esc(s.basis)}</div>`;
   h += `<div>${esc(s.summary)}</div>`;
   for (const f of s.findings) h += `<div class="finding"><b>${esc(f.category)}</b>${esc(f.reason)}</div>`;
   h += `</div>`;
 
   if (s.rw.changes.length) {
-    h += `<div class="card"><b>安全な形に書き換えた案</b>
-      <textarea id="rw" readonly>${esc(s.rw.text)}</textarea>
+    h += `<div class="card"><b>安全な形に書き換えた案</b><span class="note">（色付きが変更箇所）</span>
+      <div class="rwview">${highlightRewrite(s.rw)}</div>
+      <textarea id="rw" readonly class="hidden">${esc(s.rw.text)}</textarea>
       <div class="row"><button id="cp" class="ghost" data-src="rw">コピー</button>`;
     h += `<span class="note">書き換え後も必ず自分の目で確認してください。稀な経過や特異な数値の一般化は人の判断で行ってください</span></div>`;
     for (const n of s.rw.notes) h += `<div class="warn-inline">⚠ ${linkify(n)}</div>`;

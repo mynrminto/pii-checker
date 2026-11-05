@@ -1,3 +1,5 @@
+import { SHOMAN } from "./diseases_shoman.js?v=20";
+
 // 疾患リスト — 「特異な記述」（匿名加工情報編GL）や届出・公表（感染症法）により、地域・年齢・時期と
 // 組み合わさると個人の特定につながりうる疾患名。出典は各配列の注記を参照。
 // 名前は部分一致で検索する（全角英数は半角化、括弧内の注記は除いて照合）。
@@ -65,6 +67,22 @@ export const PEDIATRIC_RARE = [
   "総肺静脈還流異常", "QT延長症候群", "ブルガダ", "不整脈原性右室心筋症", "バーター症候群", "ギテルマン症候群", "デント病", "シスチン症", "短腸症候群", "食道閉鎖", "鎖肛", "二分脊椎", "水頭症", "小頭症", "滑脳症", "脊髄髄膜瘤",
 ];
 
+// 英語名・略称（日本語名と同じ扱いで照合。語境界を見るため英数字は前後に英数字がないことを要求）
+export const ALIASES = [
+  // [表記, 区分, 重大度]
+  ["DMD", "小児の稀少疾患", "medium"], ["BMD", "小児の稀少疾患", "medium"], ["SMA", "小児の稀少疾患", "medium"], ["Dravet", "小児の稀少疾患", "medium"], ["Rett", "小児の稀少疾患", "medium"],
+  ["Angelman", "小児の稀少疾患", "medium"], ["Prader-Willi", "小児の稀少疾患", "medium"], ["Williams", "小児の稀少疾患", "medium"], ["Noonan", "小児の稀少疾患", "medium"], ["Kabuki", "小児の稀少疾患", "medium"], ["CHARGE", "小児の稀少疾患", "medium"],
+  ["Turner", "小児の稀少疾患", "medium"], ["Klinefelter", "小児の稀少疾患", "medium"], ["22q11", "小児の稀少疾患", "medium"], ["DiGeorge", "小児の稀少疾患", "medium"], ["CDKL5", "小児の稀少疾患", "medium"], ["KCNQ2", "小児の稀少疾患", "medium"], ["SCN1A", "小児の稀少疾患", "medium"], ["SCN2A", "小児の稀少疾患", "medium"], ["STXBP1", "小児の稀少疾患", "medium"],
+  ["MELAS", "小児の稀少疾患", "medium"], ["MERRF", "小児の稀少疾患", "medium"], ["Leigh", "小児の稀少疾患", "medium"], ["OTC欠損症", "小児の稀少疾患", "medium"], ["PKU", "小児の稀少疾患", "medium"], ["MSUD", "小児の稀少疾患", "medium"], ["CAH", "小児の稀少疾患", "medium"], ["MPS", "小児の稀少疾患", "medium"], ["CF", "小児の稀少疾患", "medium"],
+  ["HLHS", "小児の稀少疾患", "medium"], ["TGA", "小児の稀少疾患", "medium"], ["TAPVR", "小児の稀少疾患", "medium"], ["TAPVC", "小児の稀少疾患", "medium"], ["DORV", "小児の稀少疾患", "medium"], ["PA/VSD", "小児の稀少疾患", "medium"], ["Ebstein", "小児の稀少疾患", "medium"], ["ARVC", "小児の稀少疾患", "medium"], ["CPVT", "小児の稀少疾患", "medium"],
+  ["SCID", "小児の稀少疾患", "medium"], ["CGD", "小児の稀少疾患", "medium"], ["WAS", "小児の稀少疾患", "medium"], ["XLA", "小児の稀少疾患", "medium"], ["HLH", "小児の稀少疾患", "medium"], ["LCH", "小児の稀少疾患", "medium"], ["ALPS", "小児の稀少疾患", "medium"], ["IPEX", "小児の稀少疾患", "medium"], ["MIS-C", "小児の稀少疾患", "medium"],
+  ["TTP", "小児の稀少疾患", "medium"], ["aHUS", "小児の稀少疾患", "medium"], ["HUS", "小児の稀少疾患", "medium"], ["DBA", "小児の稀少疾患", "medium"], ["FSGS", "小児の稀少疾患", "medium"], ["ARPKD", "小児の稀少疾患", "medium"], ["ADPKD", "小児の稀少疾患", "medium"], ["Alport", "小児の稀少疾患", "medium"], ["Bartter", "小児の稀少疾患", "medium"], ["Gitelman", "小児の稀少疾患", "medium"], ["Dent", "小児の稀少疾患", "medium"],
+  ["TSC", "小児の稀少疾患", "medium"], ["SWS", "小児の稀少疾患", "medium"], ["CMT", "小児の稀少疾患", "medium"], ["CIDP", "小児の稀少疾患", "medium"], ["ADEM", "小児の稀少疾患", "medium"], ["NMOSD", "小児の稀少疾患", "medium"], ["FIRES", "小児の稀少疾患", "medium"], ["PANDAS", "小児の稀少疾患", "medium"],
+  ["Ewing", "小児の稀少疾患", "medium"], ["Wilms", "小児の稀少疾患", "medium"], ["ALL", "小児の稀少疾患", "medium"], ["AML", "小児の稀少疾患", "medium"], ["CML", "小児の稀少疾患", "medium"], ["JMML", "小児の稀少疾患", "medium"], ["MDS", "小児の稀少疾患", "medium"], ["DIPG", "小児の稀少疾患", "medium"], ["ATRT", "小児の稀少疾患", "medium"],
+  ["EB", "小児の稀少疾患", "medium"], ["XP", "小児の稀少疾患", "medium"], ["OI", "小児の稀少疾患", "medium"], ["FOP", "小児の稀少疾患", "medium"], ["EDS", "小児の稀少疾患", "medium"], ["Marfan", "小児の稀少疾患", "medium"], ["CCHS", "小児の稀少疾患", "medium"], ["PCD", "小児の稀少疾患", "medium"],
+  ["Kawasaki", "小児の一般的な疾患", "low"], ["KD", "小児の一般的な疾患", "low"], ["T1D", "小児の一般的な疾患", "low"], ["T1DM", "小児の一般的な疾患", "low"], ["JIA", "小児の一般的な疾患", "low"], ["SLE", "小児の一般的な疾患", "low"], ["IBD", "小児の一般的な疾患", "low"], ["ITP", "小児の一般的な疾患", "low"], ["NF1", "小児の一般的な疾患", "low"], ["TOF", "小児の一般的な疾患", "low"], ["VSD", "小児の一般的な疾患", "low"], ["ASD", "小児の一般的な疾患", "low"], ["PDA", "小児の一般的な疾患", "low"], ["MG", "小児の一般的な疾患", "low"], ["MS", "小児の一般的な疾患", "low"], ["GBS", "小児の一般的な疾患", "low"], ["HSP", "小児の一般的な疾患", "low"], ["IgAV", "小児の一般的な疾患", "low"],
+];
+
 const half = (s) => s.replace(/[Ａ-Ｚａ-ｚ０-９－]/g, (c) => c === "－" ? "-" : String.fromCharCode(c.charCodeAt(0) - 0xfee0));
 const clean = (s) => half(s).replace(/（[^）]*）|\([^)]*\)/g, "").trim();
 
@@ -73,7 +91,9 @@ export const DISEASE_INDEX = [
   ...NOTIFIABLE_INFECTIONS.map((n) => [clean(n), n, "届出・公表対象の感染症", "medium"]),
   ...SHITEI_NANBYO.map((n) => [clean(n), n, "指定難病", COMMON_NANBYO.has(n) ? "low" : "medium"]),
   ...PEDIATRIC_RARE.map((n) => [clean(n), n, "小児の稀少疾患", "medium"]),
+  ...SHOMAN.map(([n, sev]) => [clean(n), n, "小児慢性特定疾病", sev]),
 ].filter((x) => x[0].length >= 2);
+const ALIAS_INDEX = ALIASES.map(([a, g, sev]) => [a, g, sev, new RegExp("(?<![A-Za-z0-9])" + a.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&") + "(?![A-Za-z0-9])")]);
 
 export function findDiseases(text) {
   const t = half(text);
@@ -82,6 +102,7 @@ export function findDiseases(text) {
   for (const [key, name, group, sev] of DISEASE_INDEX) {
     if (t.includes(key) && !seen.has(key)) { seen.add(key); found.push({ name, group, severity: sev }); }
   }
+  for (const [a, g, sev, re] of ALIAS_INDEX) if (re.test(t) && !seen.has(a)) { seen.add(a); found.push({ name: a, group: g, severity: sev }); }
   // 「ネフローゼ症候群」など、より長い一致がある場合は短い方を落とす
   return found.filter((a) => !found.some((b) => b !== a && b.name.includes(a.name) && b.name !== a.name));
 }

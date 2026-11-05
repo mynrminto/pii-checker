@@ -40,6 +40,10 @@
   .before{text-decoration:line-through;color:var(--danger)} .after{color:var(--ok);font-weight:600}
   #rw,#ai{min-height:120px;margin-top:8px}
   .tag.ai{border-style:dashed}
+  .basis{font-size:13px;font-weight:700;color:var(--muted);margin:2px 0 6px}
+  .rwview{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:8px;font-size:15px;line-height:1.8;white-space:pre-wrap}
+  .rwview mark{background:color-mix(in srgb,var(--ok) 22%,transparent);color:inherit;border-radius:3px;padding:0 2px}
+  .hidden{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
   .warn-inline{font-size:13px;color:var(--caution);margin:6px 0}
   .diff{font-size:13px;line-height:1.8;padding:8px 10px;border:1px dashed var(--line);border-radius:6px;margin-top:6px;white-space:pre-wrap}
   /* ---- インフォグラフィック ---- */
@@ -113,8 +117,7 @@
   <div class="row">
     <button id="go">判定する</button>
     <button id="clr" class="ghost">クリア</button>
-    <label class="note"><input type="checkbox" id="llm" checked> AI判定も使う（ルール判定は常に即時）</label>
-    <select id="size"><option value="small">軽量モデル（約1GB）</option><option value="medium">標準モデル（約2GB）</option></select>
+    <label class="note"><input type="checkbox" id="llm" checked> AI判定も使う（ブラウザ内の小型モデル・約1GB。ルール判定は常に即時）</label>
   </div>
   <p class="note" id="gpu">準備中…</p>
   <p class="note" id="st"></p>
@@ -195,6 +198,6 @@
     ソースコード: <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
   </footer>
 </main>
-<script type="module" src="app.js?v=19"></script>
+<script type="module" src="app.js?v=20"></script>
 </body>
 </html>
