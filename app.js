@@ -94,7 +94,7 @@ $("#go").onclick = async () => {
   judging = true; netHits = []; $("#netcount").textContent = "0 件"; $("#shield").classList.remove("alert");
 
   const { hits, keywords } = regexScan(text);
-  const ctx = corpus ? corpus.search(text.slice(0, 1500)) : [];
+  const ctx = corpus ? corpus.search(text.slice(0, 1500), 3).map((c) => ({ ...c, text: c.text.slice(0, 450) })) : [];
   // 機械検出だけ先に表示
   render({ verdict: hits.some((h) => h.severity === "high") ? "danger" : (hits.length || keywords.length) ? "caution" : "ok",
            summary: "機械検出の結果（AI判定前）", findings: [], references: [], regex_hits: hits, sensitive_keywords: keywords, retrieved: ctx, provisional: true });
@@ -105,12 +105,17 @@ $("#go").onclick = async () => {
       $("#st").textContent = "AI判定中…";
       const ctxTxt = ctx.map((c) => `【${c.source}】\n${c.text}`).join("\n\n") || "（資料なし）";
       const user = `# 参照資料\n${ctxTxt}\n\n# 機械検出の結果\n${JSON.stringify(hits)}\n要配慮の手がかり語: ${keywords.join(",")}\n\n# 判定対象テキスト\n<<<\n${text}\n>>>`;
-      const r = await eng.chat.completions.create({
+      const stream = await eng.chat.completions.create({
         messages: [{ role: "system", content: SYSTEM }, { role: "user", content: user }],
-        temperature: 0.1, max_tokens: 2500,
+        temperature: 0.1, max_tokens: 1500, stream: true,
       });
+      let out = "", n = 0;
+      for await (const chunk of stream) {
+        out += chunk.choices[0]?.delta?.content || "";
+        if (++n % 5 === 0) $("#st").textContent = `AI判定中… ${n} トークン生成`;
+      }
       let j;
-      try { j = extractJson(r.choices[0].message.content); }
+      try { j = extractJson(out); }
       catch { j = { verdict: "caution", summary: "モデル出力の解析に失敗しました。機械検出の結果を参照してください。", findings: [], references: [] }; }
       if (hits.some((h) => h.severity === "high") && j.verdict === "ok") {
         j.verdict = "caution"; j.summary = "機械検出で識別情報らしきものが見つかりました。" + (j.summary || "");
