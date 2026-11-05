@@ -100,7 +100,9 @@ $("#go").onclick = async () => {
   lastRuleText = rw.text;
   const ctx = corpus ? corpus.search(text.slice(0, 1500), 3) : [];
   const order = { ok: 0, caution: 1, danger: 2, none: 0 };
-  let ruleVerdict = hits.some((h) => h.severity === "high") ? "danger" : (hits.length || keywords.length) ? "caution" : "ok";
+  const WEAK = new Set(["年齢", "月齢", "日付（年月）", "相対的な時期", "都道府県のみ", "指定難病（患者数多）"]);
+  const strongHits = hits.filter((h) => !WEAK.has(h.type));
+  let ruleVerdict = hits.some((h) => h.severity === "high") ? "danger" : strongHits.length ? "caution" : "ok";
   if (order[combo.level] > order[ruleVerdict]) ruleVerdict = combo.level;
   const state = { verdict: ruleVerdict, summary: ruleSummary(hits, keywords, combo), findings: [], hits, keywords, combo, rw, ctx, ai: null };
   render(state);
@@ -137,7 +139,8 @@ $("#go").onclick = async () => {
       try { j = extractJson(raw); } catch { j = { verdict: ruleVerdict, summary: "AI出力を解析できませんでした（ルール判定を表示）", findings: [] }; }
       // 安全側：ルールが danger なら AI の緩い判定で下げない
       const v = ["ok", "caution", "danger"].includes(j.verdict) ? j.verdict : ruleVerdict;
-      state.verdict = order[v] > order[ruleVerdict] ? v : ruleVerdict;
+      const weakReason = /^(年齢|性別|年齢と性別|年齢、性別)[^。]{0,12}(組み合わ|組合せ)/.test(j.summary || "");
+      state.verdict = order[v] > order[ruleVerdict] && !(ruleVerdict === "ok" && weakReason) ? v : ruleVerdict;
       const bad = (x) => !x || /\|/.test(x) || /^(1文|短く|理由)$/.test(x.trim());
       state.summary = bad(j.summary) ? state.summary : j.summary;
       state.findings = (j.findings || []).filter((f) => !bad(f.category) && !bad(f.reason)).slice(0, 3);
@@ -156,6 +159,8 @@ function ruleSummary(hits, kws, combo) {
   if (high.length) return `直接識別子（${[...new Set(high)].join("、")}）を含みます。下の書き換え案を使ってください。`;
   if (combo.level === "danger") return `単独の識別子はありませんが、${combo.factors.join("＋")}の組合せで事実上一人に特定されます（容易照合性・特異な記述）。`;
   if (combo.level === "caution") return `${combo.factors.join("＋")}の組合せで特定されうる可能性があります。`;
+  const weakOnly = hits.length && hits.every((h) => ["年齢", "月齢", "日付（年月）", "相対的な時期", "都道府県のみ", "指定難病（患者数多）"].includes(h.type));
+  if (weakOnly) return "年齢・時期などは含まれますが、単独では個人を識別しません。他の情報を足すときは組合せに注意してください。";
   if (hits.length) return `単独では識別できませんが、${[...new Set(hits.map((h) => h.type))].join("、")}の組合せで特定されうる可能性があります。`;
   if (kws.length) return "識別子は検出されませんでしたが、要配慮情報に関わる語を含みます。個人と結びつく記述がないか確認してください。";
   return "個人を識別しうる情報は検出されませんでした。";
