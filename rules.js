@@ -96,6 +96,20 @@ export function ruleRewrite(raw) {
   const notes = [];
   const rec = (before, after, reason) => { if (before !== after) changes.push({ before, after, reason }); };
 
+  // 日付が2つ以上あれば、最初の日付を基準日にして間隔を保った相対表記にする（経過の情報を残す）
+  {
+    const dre = /(?<!\d)((?:19|20)\d{2})\s*[年/.-]\s*(\d{1,2})\s*[月/.-]\s*(\d{1,2})\s*日?(?!\s*(?:生まれ|生))/g;
+    const found = [...text.matchAll(dre)].map((m) => ({ s: m[0], d: Date.UTC(+m[1], +m[2] - 1, +m[3]) })).filter((x) => !isNaN(x.d));
+    if (found.length >= 2) {
+      const base = Math.min(...found.map((x) => x.d));
+      text = text.replace(dre, (m, y, mo, d) => {
+        const n = Math.round((Date.UTC(+y, +mo - 1, +d) - base) / 86400000);
+        const after = n === 0 ? "基準日" : `基準日＋${n}日`;
+        rec(m, after, "日付は間隔を保った相対表記に（学会指針3）。経過の情報は残し、暦日だけを消す");
+        return after;
+      });
+    }
+  }
   for (const [type, re, , repl, basis] of PATTERNS) {
     if (!re) continue;
     re.lastIndex = 0;
