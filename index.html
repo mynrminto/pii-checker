@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>個人情報チェッカー</title>
+<meta name="description" content="外部サービスに貼る前に、個人を特定しうる情報が含まれていないかをブラウザ内のAIで判定。テキストはどこにも送信されません。">
+<style>
+  :root{--bg:#f7f7f5;--fg:#1d1d1b;--muted:#6b6b66;--card:#fff;--line:#e3e3df;--ok:#2e7d4f;--caution:#b7791f;--danger:#c0392b;--accent:#2b5fa3}
+  @media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ececea;--muted:#9a9a94;--card:#201f1d;--line:#333}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
+  main{max-width:820px;margin:0 auto;padding:32px 16px 64px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  textarea{width:100%;min-height:200px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);font:inherit;resize:vertical}
+  .row{display:flex;gap:12px;align-items:center;margin:12px 0 20px;flex-wrap:wrap}
+  button{padding:10px 20px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;cursor:pointer}
+  button:disabled{opacity:.5;cursor:wait}
+  .ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  select{font:inherit;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+  .note{font-size:12px;color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+  .verdict{display:inline-block;padding:4px 12px;border-radius:999px;color:#fff;font-weight:600;margin-bottom:8px}
+  .v-ok{background:var(--ok)} .v-caution{background:var(--caution)} .v-danger{background:var(--danger)}
+  .finding{border-left:3px solid var(--line);padding:4px 12px;margin:10px 0}
+  .finding b{display:block}
+  .finding .adv{color:var(--accent)}
+  .tag{display:inline-block;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 8px;margin:2px 4px 2px 0}
+  .tag.high{border-color:var(--danger);color:var(--danger)} .tag.medium{border-color:var(--caution);color:var(--caution)}
+  details summary{cursor:pointer;color:var(--muted);font-size:13px}
+  .err{color:var(--danger)}
+  .shield{display:flex;gap:14px;align-items:flex-start;background:color-mix(in srgb,var(--ok) 10%,var(--card));border:1px solid var(--ok);color:var(--fg);border-radius:10px;padding:12px 16px;margin:0 0 24px}
+  .shield svg{color:var(--ok);flex:none;margin-top:2px}
+  .shield>div{flex:1} .shield b{color:var(--ok)}
+  .shield-row{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin:4px 0 6px}
+  .shield.offline{border-color:var(--accent)} .shield.offline #online b{color:var(--accent)}
+  .shield.alert{border-color:var(--danger)} .shield.alert #netcount{color:var(--danger)}
+  .warn{background:color-mix(in srgb,var(--caution) 12%,var(--card));border:1px solid var(--caution);border-radius:8px;padding:10px 14px;font-size:13px;margin:0 0 20px}
+  .before{text-decoration:line-through;color:var(--danger)} .after{color:var(--ok);font-weight:600}
+  #rw{min-height:140px;margin-top:8px}
+  footer{margin-top:40px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+</style>
+</head>
+<body>
+<main>
+  <div class="shield" id="shield">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+    <div>
+      <b>テキストは外部に送信されません — すべてこのブラウザの中で処理</b>
+      <div class="shield-row">
+        <span>送信先サーバー: <b>なし</b></span>
+        <span>判定中の通信: <b id="netcount">0 件</b></span>
+        <span id="online">オフラインでも動作: <b>可</b>（モデル読み込み後）</span>
+      </div>
+      <details class="note"><summary>自分で確かめる方法</summary>
+        ① ブラウザの開発者ツール（F12）→ Network タブを開いたまま「判定する」を押しても、新しい通信が発生しません（初回のモデルダウンロードを除く）。<br>
+        ② モデル読み込み後に機内モード／Wi-Fi オフにしても判定できます。<br>
+        ③ このページは静的ファイルのみで、受け取るサーバー自体が存在しません。<a id="repo2" href="https://github.com/mynrminto/pii-checker">ソースコード</a>で確認できます。
+      </details>
+    </div>
+  </div>
+  <h1>個人情報チェッカー</h1>
+  <p class="sub">クラウドAI・SNS・公開ページ等に貼る前に、個人を特定しうる情報や要配慮個人情報が含まれていないかを判定します。<br>
+  判定はすべてこのブラウザの中で行われ、入力したテキストはどこにも送信・保存されません（サーバーが存在しません）。</p>
+  <div class="warn"><b>これはスクリーニングであり、安全を保証するものではありません。</b><br>
+  小型のAIモデルと機械的なパターン検出による一次チェックです。見落とし・誤検出があり、「問題なし」と出ても個人が特定できる可能性は残ります。
+  書き換え案を使う場合も、最終的な確認と責任は利用者ご自身にあります。</div>
+
+  <textarea id="t" placeholder="ここに判定したいテキストを貼り付け（6000文字まで）"></textarea>
+  <div class="row">
+    <button id="go">判定する</button>
+    <button id="clr" class="ghost">クリア</button>
+    <label class="note"><input type="checkbox" id="llm" checked> AI判定を使う</label>
+    <select id="size"><option value="small">軽量モデル（約1GB）</option><option value="medium">標準モデル（約2GB）</option></select>
+  </div>
+  <p class="note" id="gpu">準備中…</p>
+  <p class="note" id="st"></p>
+  <div id="out"></div>
+
+  <footer>
+    <span id="corpus"></span> ・ 広告・アクセス解析なし ・ 本ツールはスクリーニング目的の参考情報であり、安全性や法令適合を保証しません。最終判断は入力先の規約と所属組織の規程に従ってください。<br>
+    ソースコード: <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
+  </footer>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
