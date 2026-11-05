@@ -107,10 +107,10 @@ $("#go").onclick = async () => {
       const user = `# 参照資料\n${ctxTxt}\n\n# 機械検出の結果\n${JSON.stringify(hits)}\n要配慮の手がかり語: ${keywords.join(",")}\n\n# 判定対象テキスト\n<<<\n${text}\n>>>`;
       const r = await eng.chat.completions.create({
         messages: [{ role: "system", content: SYSTEM }, { role: "user", content: user }],
-        temperature: 0.1, max_tokens: 2500, response_format: { type: "json_object" },
+        temperature: 0.1, max_tokens: 2500,
       });
       let j;
-      try { j = JSON.parse(r.choices[0].message.content); }
+      try { j = extractJson(r.choices[0].message.content); }
       catch { j = { verdict: "caution", summary: "モデル出力の解析に失敗しました。機械検出の結果を参照してください。", findings: [], references: [] }; }
       if (hits.some((h) => h.severity === "high") && j.verdict === "ok") {
         j.verdict = "caution"; j.summary = "機械検出で識別情報らしきものが見つかりました。" + (j.summary || "");
@@ -123,6 +123,14 @@ $("#go").onclick = async () => {
   judging = false;
   $("#go").disabled = false; $("#st").textContent = "";
 };
+
+// モデル出力から JSON 部分だけを取り出す（前後の説明文や ```json フェンス、<think> を除去）
+function extractJson(raw) {
+  let t = raw.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/```(?:json)?/g, "");
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a < 0 || b <= a) throw new Error("no json");
+  return JSON.parse(t.slice(a, b + 1));
+}
 
 function render(j) {
   const v = ["ok", "caution", "danger"].includes(j.verdict) ? j.verdict : "caution";
