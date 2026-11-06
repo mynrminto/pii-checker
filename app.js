@@ -1,6 +1,6 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=21";
-import { findDiseases } from "./diseases.js?v=21";
-import { loadCorpus } from "./rag.js?v=21";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=22";
+import { findDiseases } from "./diseases.js?v=22";
+import { loadCorpus } from "./rag.js?v=22";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -129,10 +129,16 @@ $("#go").onclick = async () => {
         const dz = findDiseases(text).map((d) => d.name);
         const valid = (w) => typeof w === "string" && w.length >= 2 && w.length <= 20 && text.includes(w) && !dz.some((d) => d.includes(w) || w.includes(d)) && ![...known].some((k) => k && (k.includes(w) || w.includes(k)));
         const GENERIC = /^(患者|患児|男児|女児|男性|女性|母|父|母親|父親|本人|家族|当院|当科|本院|病院|病棟|小児科|医師|先生|担当医|主治医|看護師|保護者|日本|国内|県内|市内|都内|離島|保育園|小学校|中学校|高校|学校|会社)$/;
-        for (const w of (r.names || []).filter(valid)) if (!GENERIC.test(w) && !/[\d歳]/.test(w)) extra.push({ text: w, type: "氏名（AI抽出）", severity: "high", after: "患者", reason: "氏名：学会指針1 氏名・呼び名は記載しない（AIが抽出、本文に実在することを確認）" });
-        for (const w of (r.places || []).filter(valid)) if (!GENERIC.test(w)) extra.push({ text: w, type: "地名（AI抽出）", severity: "medium", after: "（地名削除）", reason: "地名：学会指針2 住所は記載しない（AIが抽出）" });
-        for (const w of (r.facilities || []).filter(valid)) if (!GENERIC.test(w)) extra.push({ text: w, type: "施設名（AI抽出）", severity: "medium", after: "某施設", reason: "施設名：学会指針5 施設名は記載しない（AIが抽出）" });
-        for (const w of (r.jobs || []).filter(valid)) if (!GENERIC.test(w)) extra.push({ text: w, type: "職業・肩書き（AI抽出）", severity: "medium", after: "（職業削除）", reason: "職業・肩書きは識別に直結するため削除（AIが抽出）" });
+        // 氏名らしい形だけを採用：漢字2〜5字（一般名詞の文字を含まない）／カタカナ姓名／英字の姓名。敬称は許容
+        const NAME_SHAPE = /^(?:[一-龥]{2,5}|[ァ-ヶー]{2,8}(?:[ \u3000・][ァ-ヶー]{2,8})?|[A-Z][a-z]+(?:[ ・][A-Z][a-z]+)+)(?:さん|様|氏|君|ちゃん|くん)?$/;
+        const NOT_NAME = /[児者例期人生症科院病歳男女子母父親方様達等々的性別類群例者]/;
+        const nameOK = (w) => NAME_SHAPE.test(w) && !(/^[一-龥]/.test(w) && NOT_NAME.test(w.replace(/(さん|様|氏|君|ちゃん|くん)$/, "")));
+        for (const w of (r.names || []).filter(valid)) if (!GENERIC.test(w) && nameOK(w)) extra.push({ text: w, type: "氏名（AI抽出）", severity: "high", after: "患者", reason: "氏名：学会指針1 氏名・呼び名は記載しない（AIが抽出、本文に実在することを確認）" });
+        const PLACE_SHAPE = /^[一-龥ァ-ヶー]{2,8}$/, NOT_PLACE = /(病院|医院|施設|学校|小学校|中学校|高校|園|とある|某|当|本|病棟|科$|センター|会社)/;
+        for (const w of (r.places || []).filter(valid)) if (!GENERIC.test(w) && PLACE_SHAPE.test(w) && !NOT_PLACE.test(w)) extra.push({ text: w, type: "地名（AI抽出）", severity: "medium", after: "（地名削除）", reason: "地名：学会指針2 住所は記載しない（AIが抽出）" });
+        const FAC_SHAPE = /^[一-龥ァ-ヶーA-Za-z〇○]{2,14}(病院|医院|クリニック|診療所|センター|大学|学校|小学校|中学校|高校|園|会社|社)$/;
+        for (const w of (r.facilities || []).filter(valid)) if (!GENERIC.test(w) && FAC_SHAPE.test(w) && !/^(とある|某|当|本)/.test(w)) extra.push({ text: w, type: "施設名（AI抽出）", severity: "medium", after: "某施設", reason: "施設名：学会指針5 施設名は記載しない（AIが抽出）" });
+        for (const w of (r.jobs || []).filter(valid)) if (!GENERIC.test(w) && /^[一-龥ァ-ヶー]{2,10}$/.test(w) && !/(患者|医師|看護師|保護者|小児|新生児|児$)/.test(w)) extra.push({ text: w, type: "職業・肩書き（AI抽出）", severity: "medium", after: "（職業削除）", reason: "職業・肩書きは識別に直結するため削除（AIが抽出）" });
       } catch {}
       // 2b) リストにない疾患らしき語の希少性
       const listed = new Set(findDiseases(text).map((d) => d.name));
