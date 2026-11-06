@@ -76,6 +76,46 @@
   .fact b{display:block;font-size:14.5px;font-weight:700}
   .fact span{font-size:13px;color:var(--ink-2);line-height:1.65}
 
+
+  /* ---------- ヒーロー背景（方眼） ---------- */
+  .hero{position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(var(--line-2) 1px,transparent 1px),linear-gradient(90deg,var(--line-2) 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(180deg,rgba(0,0,0,.9),transparent 85%);-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.9),transparent 85%)}
+  .hero .container{position:relative}
+  .hero-grid{align-items:center}
+
+  /* ---------- デモ（墨消しアニメーション） ---------- */
+  .demo{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-2);overflow:hidden;font-size:15px}
+  .demo-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);background:var(--bg-2);font-size:12.5px;color:var(--ink-2)}
+  .demo-bar .dots{display:flex;gap:5px}.demo-bar .dots i{width:9px;height:9px;border-radius:50%;background:var(--line);display:block}
+  .demo-bar .fname{font-family:var(--num);font-weight:500}
+  .demo-bar .state{margin-left:auto;font-family:var(--num);font-size:12px;color:var(--ink-3)}
+  .demo-body{position:relative;padding:20px 22px 18px}
+  .demo-text{line-height:2.05;font-size:15.5px;min-height:5.6em}
+  .tok{position:relative;display:inline;padding:1px 2px;border-radius:3px;transition:background-color .35s}
+  .tok::after{content:"";position:absolute;left:0;right:100%;bottom:2px;height:3px;border-radius:2px;transition:right .3s cubic-bezier(.2,.8,.2,1)}
+  .tok.del::after{background:var(--danger)} .tok.gen::after{background:var(--caution)}
+  .tok.mark::after{right:0}
+  .tok.swap{background:var(--ok-bg);color:var(--ink)} .tok.swap::after{background:var(--ok);right:0}
+  .tok.gone{display:none}
+  .keep{box-shadow:inset 0 -2px 0 var(--line)}
+  .scan{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--brand),transparent);opacity:0;pointer-events:none}
+  .scan.run{animation:scan .9s ease-in-out forwards}
+  @keyframes scan{0%{top:14px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:calc(100% - 52px);opacity:0}}
+  .demo-foot{display:flex;align-items:center;gap:10px;padding:12px 22px 16px;border-top:1px solid var(--line-2);font-size:13.5px;color:var(--ink-2);min-height:54px}
+  .demo-foot .verdict{opacity:0}
+  .demo-foot .verdict.in{opacity:1;animation:stamp .32s cubic-bezier(.2,.9,.3,1.25) both}
+  .demo-foot .why{opacity:0;transition:opacity .3s}.demo-foot .why.in{opacity:1}
+  @keyframes stamp{from{transform:scale(1.25);opacity:0}to{transform:scale(1);opacity:1}}
+  #out .verdict{animation:stamp .3s cubic-bezier(.2,.9,.3,1.25) both}
+  @media (prefers-reduced-motion:reduce){.demo-foot .verdict.in,#out .verdict{animation:none}.tok::after{transition:none}.scan.run{animation:none}}
+
+  /* ---------- 特長の列 ---------- */
+  .facts-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:28px}
+  @media (max-width:860px){.facts-row{grid-template-columns:1fr}}
+  .tile .ico{width:34px;height:34px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .tile .ico svg{width:18px;height:18px}
+  .keep .ico{background:var(--ok-bg);color:var(--ok)} .gen .ico{background:var(--caution-bg);color:var(--caution)} .del .ico{background:var(--danger-bg);color:var(--danger)}
+
   /* ---------- ツール（アプリウィンドウ） ---------- */
   .app{margin:28px 0 0}
   .window{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-2);overflow:hidden}
@@ -234,11 +274,20 @@
           <h1>外部AIに渡す前の、<br>最後の確認。</h1>
           <p class="sub">症例要約や質問文に個人を特定しうる情報がないかを、ブラウザの中だけで判定します。必要最小限の書き換え案と、法令・指針に基づく根拠を示します。</p>
         </div>
-        <div class="hero-facts" aria-label="特長">
-          <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/></svg><div><b>テキストはどこにも送信されません</b><span>サーバーが存在しない静的サイト。判定中の通信件数を常時表示し、オフラインでも動作します。</span></div></div>
-          <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/></svg><div><b>疾患名は残し、識別子だけを削ります</b><span>年代・性別・経過は保持。氏名・連絡先・地名・施設・暦日・職業を削り、根拠を示します。</span></div></div>
-          <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/></svg><div><b>ルールは公開、判定は決定論的</b><span>指定難病・小児慢性特定疾病・届出感染症のリストと姓辞書を同梱。例文テストセット付きで検証できます。</span></div></div>
+        <div class="demo" aria-label="動作デモ：識別子に印が付き、書き換わる様子" role="img">
+          <div class="demo-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="fname">症例要約.txt</span><span class="state" id="demo-state">判定中</span></div>
+          <div class="demo-body">
+            <div class="scan" id="demo-scan" aria-hidden="true"></div>
+            <p class="demo-text" id="demo-text"><span class="tok del" data-new="患者">山田太郎くん</span>、<span class="tok gen" data-new="幼児期">5歳</span>男児。<span class="tok gen" data-new="基準日">2024年3月10日</span>に<span class="tok del" data-new="">大阪府堺市の</span><span class="tok gen" data-new="一般病院">当院</span>小児科へ発熱5日目で受診。<span class="keep">川崎病</span>と診断し<span class="keep">IVIG</span>を投与。母親の連絡先 <span class="tok del" data-new="（電話番号削除）">090-1234-5678</span>。</p>
+          </div>
+          <div class="demo-foot"><span class="verdict v-danger" id="demo-v1">入力不可</span><span class="why" id="demo-w1">直接識別子：氏名・住所・電話番号</span><span class="verdict v-ok" id="demo-v2" style="display:none">問題なし</span><span class="why" id="demo-w2" style="display:none">疾患名と経過は残っています</span></div>
         </div>
+      </div>
+
+      <div class="facts-row" aria-label="特長">
+        <div class="tile"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><h3>テキストはどこにも送信されません</h3><p>サーバーが存在しない静的サイト。判定中の通信件数を常時表示し、オフラインでも動作します。</p></div>
+        <div class="tile"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/></svg></span><h3>疾患名は残し、識別子だけを削ります</h3><p>年代・性別・経過は保持。氏名・連絡先・地名・施設・暦日・職業を削り、根拠を示します。</p></div>
+        <div class="tile"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/></svg></span><h3>ルールは公開、判定は決定論的</h3><p>指定難病・小児慢性特定疾病・届出感染症のリストと姓辞書を同梱。例文テストセット付きで検証できます。</p></div>
       </div>
 
       <div class="app">
@@ -271,11 +320,11 @@
         <p>個人を特定できなくするために必要な部分だけを削り、臨床的に意味のある情報は最大限残します。知りたい内容が消える書き換えはしません。</p>
       </div>
       <div class="grid3">
-        <div class="tile keep"><h3>残す</h3><div class="sub">臨床的に意味があり、識別子にならない</div>
+        <div class="tile keep"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 14.5l2 2 3.5-4"/></svg></span><h3>残す</h3><div class="sub">臨床的に意味があり、識別子にならない</div>
           <ul><li>疾患名・検査・治療・薬剤（稀少疾患も）</li><li>年代（学童期、40代）</li><li>性別</li><li>症状と経過の論理</li></ul></div>
-        <div class="tile gen"><h3>一般化</h3><div class="sub">情報は残しつつ精度を落とす</div>
+        <div class="tile gen"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></span><h3>一般化</h3><div class="sub">情報は残しつつ精度を落とす</div>
           <ul><li>5歳 → 幼児期、47歳 → 40代</li><li>2024年3月13日 → 基準日＋3日</li><li>116歳 → 100歳以上（同意要検討）</li><li>国内2例目 → 極めて稀な</li></ul></div>
-        <div class="tile del"><h3>削る</h3><div class="sub">識別に直結し、臨床的な意味が薄い（<a href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener">学会指針</a>）</div>
+        <div class="tile del"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l7-7 5 5-5 5H6z"/><path d="M10 10l5-5 5 5-5 5"/><path d="M4 21h16"/></svg></span><h3>削る</h3><div class="sub">識別に直結し、臨床的な意味が薄い（<a href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener">学会指針</a>）</div>
           <ul><li>氏名・イニシャル・ID・連絡先</li><li>市町村以下の地名、施設名、「当院」</li><li>受診日などの暦日、「昨日の当直で」</li><li>学校名・職業・家族構成</li></ul></div>
       </div>
       <div class="combo">
@@ -347,12 +396,48 @@
   </footer>
 </main>
 <script>
+  // ヒーローのデモ：識別子に印 → 置換 → 判定。reduced-motion では最終状態を静止表示
+  (() => {
+    const toks = [...document.querySelectorAll("#demo-text .tok")];
+    const orig = toks.map((t) => t.textContent);
+    const v1 = document.getElementById("demo-v1"), w1 = document.getElementById("demo-w1"), v2 = document.getElementById("demo-v2"), w2 = document.getElementById("demo-w2");
+    const scan = document.getElementById("demo-scan"), state = document.getElementById("demo-state");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const show = (el, on) => { el.style.display = on ? "" : "none"; };
+    const final = () => { toks.forEach((t, i) => { const n = t.dataset.new; if (n === "") t.classList.add("gone"); else { t.textContent = n; t.classList.add("swap"); } }); show(v1, false); show(w1, false); show(v2, true); show(w2, true); v2.classList.add("in"); w2.classList.add("in"); state.textContent = "書き換え済み"; };
+    if (reduce) { final(); return; }
+    const timers = [];
+    const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+    const run = () => {
+      timers.splice(0).forEach(clearTimeout);
+      toks.forEach((t, i) => { t.textContent = orig[i]; t.className = t.className.replace(/\s*(mark|swap|gone)/g, ""); });
+      [v1, v2, w1, w2].forEach((e) => e.classList.remove("in")); show(v1, true); show(w1, true); show(v2, false); show(w2, false);
+      scan.classList.remove("run"); state.textContent = "判定中";
+      at(500, () => { v1.classList.add("in"); w1.classList.add("in"); });
+      at(1400, () => { void scan.offsetWidth; scan.classList.add("run"); });
+      toks.forEach((t, i) => at(2000 + i * 200, () => t.classList.add("mark")));
+      toks.forEach((t, i) => at(3600 + i * 220, () => { const n = t.dataset.new; if (n === "") t.classList.add("gone"); else { t.textContent = n; t.classList.add("swap"); } }));
+      at(5300, () => { show(v1, false); show(w1, false); show(v2, true); show(w2, true); v2.classList.add("in"); w2.classList.add("in"); state.textContent = "書き換え済み"; });
+      at(9200, run);
+    };
+    run();
+  })();
+
+  // 入力欄のプレースホルダを例文で巡回（空のときだけ）
+  (() => {
+    const t = document.getElementById("t");
+    const ex = ["ここに貼り付け（6000文字まで）", "例：12歳男児。ファンコニ貧血疑いで骨髄検査を予定。見るべき項目は？", "例：7歳女児、佐渡島在住。ドラベ症候群で2023年12月に入院。", "例：川崎病のIVIG不応例に対する追加治療の選択肢を教えてください。"];
+    let i = 0;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setInterval(() => { if (document.activeElement === t || t.value) return; i = (i + 1) % ex.length; t.placeholder = ex[i]; }, 4000);
+  })();
+
   document.getElementById("sample").addEventListener("click", () => {
     const t = document.getElementById("t");
     t.value = "山田太郎くん、5歳男児。2024年3月10日に大阪府堺市の当院小児科へ発熱5日目で受診、2024年3月13日に川崎病と診断しIVIG 2g/kgを投与。母親の連絡先 090-1234-5678。";
     t.focus();
   });
 </script>
-<script type="module" src="app.js?v=30"></script>
+<script type="module" src="app.js?v=31"></script>
 </body>
 </html>
