@@ -1,6 +1,6 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=26";
-import { findDiseases } from "./diseases.js?v=26";
-import { loadCorpus } from "./rag.js?v=26";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=27";
+import { findDiseases } from "./diseases.js?v=27";
+import { loadCorpus } from "./rag.js?v=27";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -279,6 +279,7 @@ function render(s) {
   let h = `<div class="card"><span class="verdict v-${v}">${VL[v]}</span>`;
   if (s.ai === null && $("#llm").checked && navigator.gpu) h += `<span class="note"> ルール判定（AIによる固有名の抽出を実行中）</span>`;
   else if (s.ai && s.ai.startsWith("error")) h += `<span class="note err"> AI抽出失敗: ${esc(s.ai.slice(7))}（ルール判定のみ）</span>`;
+  else if (s.ai === null && !($("#llm").checked && navigator.gpu)) h += `<span class="note"> ルール判定のみ（AI抽出なし：辞書にない氏名・地名・施設名、リスト未収載の稀少疾患は検出できません${navigator.gpu ? "。上のチェックを入れるとAI抽出が有効になります" : "。この端末はWebGPU非対応です"}）</span>`;
   else if (s.ai === "done") h += `<span class="note"> ルール判定＋AI抽出${s.hits.some((x) => x.ai) ? `（AIが${s.hits.filter((x) => x.ai).length}件を追加抽出）` : "（AIの追加抽出なし）"}</span>`;
   h += `<div class="basis">${esc(s.basis)}</div>`;
   h += `<div>${esc(s.summary)}</div>`;

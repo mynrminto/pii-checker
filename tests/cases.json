@@ -225,13 +225,17 @@
  },
  {
   "text": "ジョン・スミス、7歳。来日中に発熱。",
-  "expect": "ok",
-  "needs_ai": true
+  "expect": "danger",
+  "rewrite_excludes": [
+   "ジョン・スミス"
+  ]
  },
  {
   "text": "タナカ ハナコ 3歳、保育園で発疹。",
-  "expect": "ok",
-  "needs_ai": true
+  "expect": "danger",
+  "rewrite_excludes": [
+   "タナカ ハナコ 3歳"
+  ]
  },
  {
   "text": "担当は私、森本です。患者さんは学童期の女児で、紫斑病性腎炎。",
@@ -255,10 +259,12 @@
  },
  {
   "text": "近大病院から紹介のMichael Brown、9歳。てんかん。",
-  "expect": "caution",
-  "needs_ai": true,
+  "expect": "danger",
   "rewrite_contains": [
    "某施設"
+  ],
+  "rewrite_excludes": [
+   "Michael Brown"
   ]
  },
  {
