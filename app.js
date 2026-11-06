@@ -1,6 +1,6 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=22";
-import { findDiseases } from "./diseases.js?v=22";
-import { loadCorpus } from "./rag.js?v=22";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=23";
+import { findDiseases } from "./diseases.js?v=23";
+import { loadCorpus } from "./rag.js?v=23";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -128,7 +128,7 @@ $("#go").onclick = async () => {
         const known = new Set(hits.map((h) => h.raw || h.excerpt));
         const dz = findDiseases(text).map((d) => d.name);
         const valid = (w) => typeof w === "string" && w.length >= 2 && w.length <= 20 && text.includes(w) && !dz.some((d) => d.includes(w) || w.includes(d)) && ![...known].some((k) => k && (k.includes(w) || w.includes(k)));
-        const GENERIC = /^(患者|患児|男児|女児|男性|女性|母|父|母親|父親|本人|家族|当院|当科|本院|病院|病棟|小児科|医師|先生|担当医|主治医|看護師|保護者|日本|国内|県内|市内|都内|離島|保育園|小学校|中学校|高校|学校|会社)$/;
+        const GENERIC = /^(患者|患児|男児|女児|男子|女子|乳児|幼児|学童|小児|成人|高齢者|思春期|新生児|早産児|男性|女性|母|父|母親|父親|本人|家族|当院|当科|本院|病院|病棟|小児科|医師|先生|担当医|主治医|看護師|保護者|日本|国内|県内|府内|都内|道内|市内|町内|村内|離島|保育園|小学校|中学校|高校|学校|会社|症例|本症例|自験例)$/;
         // 氏名らしい形だけを採用：漢字2〜5字（一般名詞の文字を含まない）／カタカナ姓名／英字の姓名。敬称は許容
         const NAME_SHAPE = /^(?:[一-龥]{2,5}|[ァ-ヶー]{2,8}(?:[ \u3000・][ァ-ヶー]{2,8})?|[A-Z][a-z]+(?:[ ・][A-Z][a-z]+)+)(?:さん|様|氏|君|ちゃん|くん)?$/;
         const NOT_NAME = /[児者例期人症科院病歳母父親方達等々的性別類群]/;

@@ -1,6 +1,6 @@
 // ルール層 — 機械検出と決定論的な書き換え。どの端末でも瞬時に動き、結果が再現できる。
-import { findDiseases } from "./diseases.js?v=22";
-import { SURNAMES } from "./surnames.js?v=22";
+import { findDiseases } from "./diseases.js?v=23";
+import { SURNAMES } from "./surnames.js?v=23";
 
 const NUM = "[0-9０-９]";
 const toHalf = (s) => s.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));

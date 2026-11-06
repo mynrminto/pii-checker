@@ -1,4 +1,4 @@
-import { SHOMAN } from "./diseases_shoman.js?v=22";
+import { SHOMAN } from "./diseases_shoman.js?v=23";
 
 // 疾患リスト — 「特異な記述」（匿名加工情報編GL）や届出・公表（感染症法）により、地域・年齢・時期と
 // 組み合わさると個人の特定につながりうる疾患名。出典は各配列の注記を参照。
