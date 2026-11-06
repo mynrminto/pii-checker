@@ -117,7 +117,7 @@
   <div class="row">
     <button id="go">判定する</button>
     <button id="clr" class="ghost">クリア</button>
-    <label class="note"><input type="checkbox" id="llm" checked> AI判定も使う（ブラウザ内の小型モデル・約1GB。ルール判定は常に即時）</label>
+    <label class="note"><input type="checkbox" id="llm" checked> AIで固有名（氏名・地名・施設・職業）と稀少疾患を追加抽出する（ブラウザ内の小型モデル・約1GB。判定はルールが行う）</label>
   </div>
   <p class="note" id="gpu">準備中…</p>
   <p class="note" id="st"></p>
@@ -159,13 +159,13 @@
       <div class="arrow" aria-hidden="true">→</div>
       <div class="step rule"><div class="step-l">ルール層（即時・決定論的）</div><div class="step-t">検出・書き換え・根拠</div><p>正規表現で氏名・連絡先・地名・日付・年齢を検出。指定難病348＋届出感染症のリストで特異な記述を判定。組合せを評価し、書き換え文と変更理由を生成。</p></div>
       <div class="arrow" aria-hidden="true">→</div>
-      <div class="step ai"><div class="step-l">AI層（WebGPU・任意）</div><div class="step-t">短い判定と希少性推定</div><p>小型LLM（1.5〜3B）をブラウザ内で実行。文脈を読んだ所見と、リスト未収載の疾患名の希少性を推定。ルールの「入力不可」は下げません。</p></div>
+      <div class="step ai"><div class="step-l">AI層（WebGPU・任意）</div><div class="step-t">固有名の抽出と希少性推定</div><p>小型LLM（1.5B）をブラウザ内で実行。辞書にない氏名（カタカナ・英字）、接尾辞のない地名、施設名、職業を本文から抜き出し、リスト未収載の疾患名の希少性を推定。判定はしません。</p></div>
       <div class="arrow" aria-hidden="true">→</div>
       <div class="step"><div class="step-l">出力</div><div class="chips"><span class="chip bad">入力不可</span><span class="chip warn2">注意</span><span class="chip ok">問題なし</span></div><p>判定＋書き換え案＋変更箇所と理由。コピーしてそのまま使えます。</p></div>
     </div>
 
     <div class="grid2">
-      <div class="box"><div class="box-t">なぜ「書き換え」はルールに任せるのか</div><p>ブラウザで動く小型モデルに文章を書き換えさせると「質問に答える」か「一字も変えない」かになり、稀少疾患名を消してしまうこともありました。確実性と根拠が要る工程は決定論的に、文脈の判断だけをAIに任せています。</p></div>
+      <div class="box"><div class="box-t">AIは「抽出器」、ルールが「判定器」</div><p>小型モデルは判定や書き換えを任せると誤りが多い一方、「本文中の人名・地名を抜き出す」ような作業は正確です。そこで AI には抽出だけをさせ、抽出した文字列が本文に実在することを検証してから、ルール層が判定・置換します。</p></div>
       <div class="box"><div class="box-t">送信していないことを自分で確かめられる</div><p>静的サイトでサーバーが存在しません。判定中の外部通信件数をページ上部に表示し、Wi-Fiを切っても動作します。広告・アクセス解析なし、ソースコードは公開。</p></div>
     </div>
 
@@ -198,6 +198,6 @@
     ソースコード: <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
   </footer>
 </main>
-<script type="module" src="app.js?v=20"></script>
+<script type="module" src="app.js?v=21"></script>
 </body>
 </html>

@@ -1,18 +1,20 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=20";
-import { findDiseases } from "./diseases.js?v=20";
-import { loadCorpus } from "./rag.js?v=20";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=21";
+import { findDiseases } from "./diseases.js?v=21";
+import { loadCorpus } from "./rag.js?v=21";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const VL = { ok: "入力して問題なし", caution: "注意（文脈次第で特定されうる）", danger: "入力不可（個人情報／要配慮情報を含む）" };
 const MODEL = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 
-// 判定専用の短いプロンプト（高速化のため、書き換えは頼まない）
-const JUDGE_SYSTEM = `あなたは日本の個人情報保護法と医療ガイダンスに基づく審査員。テキストを外部AIやSNSに入力してよいか判定し、JSONだけを返す。
-判定: danger=氏名・連絡先・ID・個人識別符号、または個人と結びつく病歴・診断を含む / caution=年齢・性別・地域・日付・施設・稀な疾患などの組合せで特定されうる / ok=個人を識別しうる情報なし
-出力例1: {"verdict":"danger","summary":"氏名と診断名が結びついており要配慮個人情報に当たる。","findings":[{"category":"要配慮個人情報","reason":"氏名付きで川崎病の診断が書かれている"},{"category":"個人情報","reason":"保護者の電話番号がある"}]}
-出力例2: {"verdict":"ok","summary":"一般的な医学的質問で個人を識別する情報はない。","findings":[]}
-summaryは判定対象に即した具体的な1文。categoryは 個人情報／要配慮個人情報／個人識別符号／組合せによる特定 のいずれか1つ。findingsは最大3件。例文をそのまま写さない。`;
+// 抽出専用プロンプト：判定はさせず、本文中の文字列をそのまま抜き出させる（ルール層が判定・置換する）
+const EXTRACT_SYSTEM = `テキストから次の4種類を抜き出し、JSONだけを返す。各要素はテキストに出てくる文字列を一字も変えずに書く。無ければ空配列。
+- names: 人名（患者・家族・医師など。漢字・カタカナ・英字すべて。「患者」「男児」「母」のような一般名詞は含めない）
+- places: 地名（都道府県・市区町村・島・地域の名前。「病院」「病棟」は含めない）
+- facilities: 施設名（病院・診療所・学校・園・会社の固有名）
+- jobs: 職業・肩書き（議員・社長・教員など）
+例: 入力「タナカ ハナコ 3歳、大阪の〇〇小学校で発疹。父は市議。」→ {"names":["タナカ ハナコ"],"places":["大阪"],"facilities":["〇〇小学校"],"jobs":["市議"]}
+例: 入力「川崎病のIVIG不応例の治療を教えて。」→ {"names":[],"places":[],"facilities":[],"jobs":[]}`;
 
 // 希少性推定（リストにない疾患名のみ）
 const RARITY_SYSTEM = `医学用語の希少性を推定する。各用語について、日本での患者数の目安を rare（概ね1万人未満、または感染症法の届出対象）/ common（それ以上）/ unknown（疾患名でない、または不明）で答える。
@@ -112,13 +114,27 @@ $("#go").onclick = async () => {
   const state = { verdict: ruleVerdict, basis: ruleBasis(hits, combo, ruleVerdict), summary: ruleSummary(hits, keywords, combo), findings: [], hits, keywords, combo, rw, ctx, ai: null };
   render(state);
 
-  // 2) AI層：短い判定のみ（任意）
+  // 2) AI層：抽出のみ（判定はしない）。抽出した文字列を検証してルール層に合流させる
   if ($("#llm").checked && navigator.gpu) {
     judging = true; netHits = []; $("#netcount").textContent = "0 件"; $("#shield").classList.remove("alert");
     try {
       await ensureEngine();
       judging = true;
-      // 2a) リストにない疾患らしき語の希少性を推定（AIの推定として表示、ルール判定を補完）
+      const extra = [];   // ルール層へ渡す追加スパン [{text, type, severity, after, reason}]
+      // 2a) 人名・地名・施設・職業の抽出
+      $("#st").textContent = "AIで固有名を抽出中…";
+      try {
+        const r = extractJson(await chat(EXTRACT_SYSTEM, text.slice(0, 2500), 300, (n) => { $("#st").textContent = `AIで固有名を抽出中… ${n} トークン`; }));
+        const known = new Set(hits.map((h) => h.raw || h.excerpt));
+        const dz = findDiseases(text).map((d) => d.name);
+        const valid = (w) => typeof w === "string" && w.length >= 2 && w.length <= 20 && text.includes(w) && !dz.some((d) => d.includes(w) || w.includes(d)) && ![...known].some((k) => k && (k.includes(w) || w.includes(k)));
+        const GENERIC = /^(患者|患児|男児|女児|男性|女性|母|父|母親|父親|本人|家族|当院|当科|本院|病院|病棟|小児科|医師|先生|担当医|主治医|看護師|保護者|日本|国内|県内|市内|都内|離島|保育園|小学校|中学校|高校|学校|会社)$/;
+        for (const w of (r.names || []).filter(valid)) if (!GENERIC.test(w) && !/[\d歳]/.test(w)) extra.push({ text: w, type: "氏名（AI抽出）", severity: "high", after: "患者", reason: "氏名：学会指針1 氏名・呼び名は記載しない（AIが抽出、本文に実在することを確認）" });
+        for (const w of (r.places || []).filter(valid)) if (!GENERIC.test(w)) extra.push({ text: w, type: "地名（AI抽出）", severity: "medium", after: "（地名削除）", reason: "地名：学会指針2 住所は記載しない（AIが抽出）" });
+        for (const w of (r.facilities || []).filter(valid)) if (!GENERIC.test(w)) extra.push({ text: w, type: "施設名（AI抽出）", severity: "medium", after: "某施設", reason: "施設名：学会指針5 施設名は記載しない（AIが抽出）" });
+        for (const w of (r.jobs || []).filter(valid)) if (!GENERIC.test(w)) extra.push({ text: w, type: "職業・肩書き（AI抽出）", severity: "medium", after: "（職業削除）", reason: "職業・肩書きは識別に直結するため削除（AIが抽出）" });
+      } catch {}
+      // 2b) リストにない疾患らしき語の希少性
       const listed = new Set(findDiseases(text).map((d) => d.name));
       const cand = [...new Set((text.match(/[一-龥ァ-ヶーA-Za-z0-9・]{2,20}(症候群|病|症|炎|欠損症|欠乏症|異常症|腫|変性症|不全症|血症|尿症)(?![一-龥ァ-ヶ])/g) || []))]
         .filter((w) => ![...listed].some((n) => w.includes(n) || n.includes(w)) && !/^(疾病|病院|症状|症例|炎症|既往症|合併症|感染症|診断|持病|難病|稀少疾患|指定難病)$/.test(w)).slice(0, 8);
@@ -126,33 +142,21 @@ $("#go").onclick = async () => {
         $("#st").textContent = "疾患の希少性を推定中…";
         try {
           const r = extractJson(await chat(RARITY_SYSTEM, cand.join("\n"), 200, () => {}));
-          const rare = cand.filter((w) => r[w] === "rare");
-          if (rare.length) {
-            for (const w of rare) hits.push({ type: "稀少・届出疾患", severity: "medium", basis: "AIの推定（リスト未収載・未確認）", excerpt: w, ai: true });
-            const c2 = comboRisk(hits, text);
-            state.combo = c2; state.hits = hits;
-            if (order[c2.level] > order[ruleVerdict]) { ruleVerdict = c2.level; state.verdict = c2.level; state.summary = ruleSummary(hits, keywords, c2); }
-            state.rw.notes.push(`AIの推定：「${rare.join("」「")}」は稀少疾患の可能性があります（リスト未収載のため未確認）。地域・年齢・時期との組合せに注意してください。`);
-            render(state);
-          }
+          for (const w of cand.filter((w) => r[w] === "rare")) extra.push({ text: w, type: "稀少・届出疾患", severity: "medium", after: null, reason: "AIの推定（リスト未収載・未確認）", note: `AIの推定：「${w}」は稀少疾患の可能性があります（リスト未収載のため未確認）。地域・年齢・時期との組合せに注意してください。` });
         } catch {}
       }
-      $("#st").textContent = "AI判定中…";
-      const user = `機械検出: ${hits.map((h) => h.type).join("、") || "なし"} / 組合せリスク: ${combo.factors.join("+") || "なし"} / 要配慮の手がかり: ${keywords.join("、") || "なし"}\n\n判定対象:\n${text.slice(0, 2500)}`;
-      const raw = await chat(JUDGE_SYSTEM, user, 350, (n) => { $("#st").textContent = `AI判定中… ${n} トークン`; });
-      let j;
-      try { j = extractJson(raw); } catch { j = { verdict: ruleVerdict, summary: "AI出力を解析できませんでした（ルール判定を表示）", findings: [] }; }
-      // 安全側：ルールが danger なら AI の緩い判定で下げない
-      const v = ["ok", "caution", "danger"].includes(j.verdict) ? j.verdict : ruleVerdict;
-      state.verdict = order[v] > order[ruleVerdict] ? v : ruleVerdict;
-      const bad = (x) => !x || /\|/.test(x) || /^(1文|短く|理由)$/.test(x.trim());
-      const trivial = (x) => /^(性別|年齢|年代|年齢と性別|年齢、性別|性別と年齢|男児|女児|男性|女性)[。．]?$/.test((x || "").trim());
-      const dz = findDiseases(text).map((d) => d.name);
-      const diseaseOnly = (f) => /稀少|希少|難病|届出/.test(f.category + f.reason) || dz.some((n) => (f.reason || "").includes(n) && (f.reason || "").length < n.length + 14);
-      state.findings = (j.findings || []).filter((f) => !bad(f.category) && !bad(f.reason) && !trivial(f.reason) && !(ruleVerdict === "ok" && diseaseOnly(f))).slice(0, 3);
-      // ルールが ok のとき、AI の引き上げは具体的な所見があるときだけ認める
-      if (ruleVerdict === "ok" && state.verdict !== "ok" && !state.findings.length) state.verdict = "ok";
-      state.summary = bad(j.summary) || (ruleVerdict === "ok" && state.verdict === "ok") ? state.summary : j.summary;
+      // 2c) ルール層で再評価・再書き換え
+      if (extra.length) {
+        for (const e of extra) hits.push({ type: e.type, severity: e.severity, basis: e.reason, raw: e.text, excerpt: e.text, ai: true });
+        const c2 = comboRisk(hits, text);
+        const strong2 = hits.filter((h) => !WEAK.has(h.type) && h.type !== "稀少・届出疾患");
+        let v2 = hits.some((h) => h.severity === "high") ? "danger" : strong2.length ? "caution" : "ok";
+        if (order[c2.level] > order[v2]) v2 = c2.level;
+        const rw2 = ruleRewrite(text, extra.filter((e) => e.after !== null));
+        for (const e of extra) if (e.note) rw2.notes.push(e.note);
+        Object.assign(state, { verdict: v2, basis: ruleBasis(hits, c2, v2), summary: ruleSummary(hits, keywords, c2), hits, combo: c2, rw: rw2 });
+        lastRuleText = rw2.text;
+      }
       state.ai = "done";
       render(state);
     } catch (e) {
@@ -260,11 +264,11 @@ function linkify(text) {
 function render(s) {
   const v = s.verdict;
   let h = `<div class="card"><span class="verdict v-${v}">${VL[v]}</span>`;
-  if (s.ai === null && $("#llm").checked && navigator.gpu) h += `<span class="note"> ルール判定（AI判定を実行中）</span>`;
-  else if (s.ai && s.ai.startsWith("error")) h += `<span class="note err"> AI判定失敗: ${esc(s.ai.slice(7))}（ルール判定を表示）</span>`;
+  if (s.ai === null && $("#llm").checked && navigator.gpu) h += `<span class="note"> ルール判定（AIによる固有名の抽出を実行中）</span>`;
+  else if (s.ai && s.ai.startsWith("error")) h += `<span class="note err"> AI抽出失敗: ${esc(s.ai.slice(7))}（ルール判定のみ）</span>`;
+  else if (s.ai === "done") h += `<span class="note"> ルール判定＋AI抽出${s.hits.some((x) => x.ai) ? `（AIが${s.hits.filter((x) => x.ai).length}件を追加抽出）` : "（AIの追加抽出なし）"}</span>`;
   h += `<div class="basis">${esc(s.basis)}</div>`;
   h += `<div>${esc(s.summary)}</div>`;
-  for (const f of s.findings) h += `<div class="finding"><b>${esc(f.category)}</b>${esc(f.reason)}</div>`;
   h += `</div>`;
 
   if (s.rw.changes.length) {

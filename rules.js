@@ -1,6 +1,6 @@
 // ルール層 — 機械検出と決定論的な書き換え。どの端末でも瞬時に動き、結果が再現できる。
-import { findDiseases } from "./diseases.js?v=20";
-import { SURNAMES } from "./surnames.js?v=20";
+import { findDiseases } from "./diseases.js?v=21";
+import { SURNAMES } from "./surnames.js?v=21";
 
 const NUM = "[0-9０-９]";
 const toHalf = (s) => s.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
@@ -132,11 +132,18 @@ export function comboRisk(hits, text) {
 }
 
 // 決定論的な書き換え。changes に before/after/reason を残す。
-export function ruleRewrite(raw) {
+export function ruleRewrite(raw, extra = []) {
   let text = toHalf(raw);
   const changes = [];
   const notes = [];
   const rec = (before, after, reason) => { if (before !== after) changes.push({ before, after, reason }); };
+  // AI等が抽出した追加スパン（本文に実在するものだけ）を先に置換。長いものから
+  for (const e of [...extra].sort((a, b) => b.text.length - a.text.length)) {
+    const w = toHalf(e.text);
+    if (!w || !text.includes(w)) continue;
+    text = text.split(w).join(e.after);
+    rec(w, e.after, e.reason);
+  }
 
   // 日付が2つ以上あれば、最初の日付を基準日にして間隔を保った相対表記にする（経過の情報を残す）
   {
