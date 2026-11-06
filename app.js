@@ -1,9 +1,10 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=28";
-import { findDiseases } from "./diseases.js?v=28";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=29";
+import { findDiseases } from "./diseases.js?v=29";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const VL = { ok: "入力して問題なし", caution: "注意（文脈次第で特定されうる）", danger: "入力不可（個人情報／要配慮情報を含む）" };
+const VL = { ok: "問題なし", caution: "注意", danger: "入力不可" };
+const VS = { ok: "個人を識別しうる情報は見つかりませんでした", caution: "文脈次第で特定されうる情報を含みます", danger: "個人情報または要配慮情報を含みます" };
 const MODEL = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 
 // 抽出専用プロンプト：判定はさせず、本文中の文字列をそのまま抜き出させる（ルール層が判定・置換する）
@@ -178,16 +179,17 @@ $("#go").onclick = async () => {
 
 // verdict 直下の一行（ルール根拠のみ。AIの文で上書きされない）
 function ruleBasis(hits, combo, v) {
-  const high = [...new Set(hits.filter((h) => h.severity === "high").map((h) => h.type))];
+  const norm = (t) => t.replace(/^氏名.*$/, "氏名").replace(/^住所.*$/, "住所").replace(/^地名.*$/, "地名").replace(/^施設名.*$/, "施設名").replace(/^職業.*$/, "職業・肩書き");
+  const high = [...new Set(hits.filter((h) => h.severity === "high").map((h) => norm(h.type)))];
   if (high.length) return `直接識別子：${high.join("・")}`;
   if (combo.level !== "none") return `組合せ：${combo.factors.join("＋")}`;
-  const med = [...new Set(hits.filter((h) => h.severity === "medium").map((h) => h.type))];
+  const med = [...new Set(hits.filter((h) => h.severity === "medium").map((h) => norm(h.type)))];
   if (med.length) return `検出：${med.join("・")}（単独では識別しない）`;
   return "識別子・準識別子の組合せは検出なし";
 }
 
 function ruleSummary(hits, kws, combo) {
-  const high = hits.filter((h) => h.severity === "high").map((h) => h.type);
+  const high = hits.filter((h) => h.severity === "high").map((h) => h.type.replace(/^氏名.*$/, "氏名").replace(/^住所.*$/, "住所"));
   if (high.length) return `直接識別子（${[...new Set(high)].join("、")}）を含みます。下の書き換え案を使ってください。`;
   if (combo.level === "danger") return `単独の識別子はありませんが、${combo.factors.join("＋")}の組合せで事実上一人に特定されます（容易照合性・特異な記述）。`;
   if (combo.level === "caution") return `${combo.factors.join("＋")}の組合せで特定されうる可能性があります。`;
@@ -272,11 +274,13 @@ function linkify(text) {
 // ---------- 描画 ----------
 function render(s) {
   const v = s.verdict;
-  let h = `<div class="card"><span class="verdict v-${v}">${VL[v]}</span>`;
-  if (s.ai === null && $("#llm").checked && navigator.gpu) h += `<span class="note"> ルール判定（AIによる固有名の抽出を実行中）</span>`;
-  else if (s.ai && s.ai.startsWith("error")) h += `<span class="note err"> AI抽出失敗: ${esc(s.ai.slice(7))}（ルール判定のみ）</span>`;
-  else if (s.ai === null && !($("#llm").checked && navigator.gpu)) h += `<span class="note"> ルール判定のみ（AI抽出なし：辞書にない氏名・地名・施設名、リスト未収載の稀少疾患は検出できません${navigator.gpu ? "。上のチェックを入れるとAI抽出が有効になります" : "。この端末はWebGPU非対応です"}）</span>`;
-  else if (s.ai === "done") h += `<span class="note"> ルール判定＋AI抽出${s.hits.some((x) => x.ai) ? `（AIが${s.hits.filter((x) => x.ai).length}件を追加抽出）` : "（AIの追加抽出なし）"}</span>`;
+  let h = `<div class="card"><div class="verdict-row"><span class="verdict v-${v}">${VL[v]}</span><span class="verdict-sub">${VS[v]}</span></div>`;
+  let mode = "";
+  if (s.ai === null && $("#llm").checked && navigator.gpu) mode = "ルール判定（AIによる固有名の抽出を実行中）";
+  else if (s.ai && s.ai.startsWith("error")) mode = `AI抽出失敗: ${s.ai.slice(7)}（ルール判定のみ）`;
+  else if (s.ai === null && !($("#llm").checked && navigator.gpu)) mode = `ルール判定のみ。AI抽出なしでは、辞書にない氏名・地名・施設名やリスト未収載の稀少疾患は検出できません${navigator.gpu ? "（上のチェックを入れると有効になります）" : "（この端末は WebGPU 非対応）"}`;
+  else if (s.ai === "done") mode = `ルール判定＋AI抽出${s.hits.some((x) => x.ai) ? `（AIが${s.hits.filter((x) => x.ai).length}件を追加抽出）` : "（AIの追加抽出なし）"}`;
+  if (mode) h += `<div class="note mode">${esc(mode)}</div>`;
   h += `<div class="basis">${esc(s.basis)}</div>`;
   h += `<div>${esc(s.summary)}</div>`;
   h += `</div>`;
