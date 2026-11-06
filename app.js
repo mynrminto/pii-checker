@@ -1,6 +1,5 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=27";
-import { findDiseases } from "./diseases.js?v=27";
-import { loadCorpus } from "./rag.js?v=27";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=28";
+import { findDiseases } from "./diseases.js?v=28";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -30,7 +29,7 @@ const REWRITE_SYSTEM = `あなたは医療文書の匿名化担当者。<<< と 
 - 既に一般化済みの語や、識別につながらない部分は変えない。
 出力は書き換え後の文章そのものだけ。説明・前置き・箇条書き・引用符・囲み記号は付けない。`;
 
-let corpus = null, engine = null, webllm = null, loadedModel = null;
+let engine = null, webllm = null, loadedModel = null;
 let lastRuleText = "";
 
 // ---------- 通信モニタ ----------
@@ -55,8 +54,6 @@ addEventListener("online", updateOnline); addEventListener("offline", updateOnli
 
 // ---------- 初期化 ----------
 (async () => {
-  corpus = await loadCorpus();
-  $("#corpus").textContent = `資料チャンク ${corpus.size} 件`;
   if (!navigator.gpu) {
     $("#gpu").innerHTML = "このブラウザは WebGPU 非対応のため AI判定は使えません（ルール判定・書き換えは利用できます）。";
     $("#llm").disabled = true; $("#llm").checked = false;
@@ -105,13 +102,12 @@ $("#go").onclick = async () => {
   const { hits, keywords, combo } = regexScan(text);
   const rw = ruleRewrite(text);
   lastRuleText = rw.text;
-  const ctx = corpus ? corpus.search(text.slice(0, 1500), 3) : [];
   const order = { ok: 0, caution: 1, danger: 2, none: 0 };
   const WEAK = new Set(["年齢", "月齢", "日付（年月）", "相対的な時期", "都道府県のみ", "都道府県名（接尾辞なし）", "指定難病（患者数多）", "稀少・届出疾患", "家族構成", "特異な記述（経過）"]);
   const strongHits = hits.filter((h) => !WEAK.has(h.type));
   let ruleVerdict = hits.some((h) => h.severity === "high") ? "danger" : strongHits.length ? "caution" : "ok";
   if (order[combo.level] > order[ruleVerdict]) ruleVerdict = combo.level;
-  const state = { verdict: ruleVerdict, basis: ruleBasis(hits, combo, ruleVerdict), summary: ruleSummary(hits, keywords, combo), findings: [], hits, keywords, combo, rw, ctx, ai: null };
+  const state = { verdict: ruleVerdict, basis: ruleBasis(hits, combo, ruleVerdict), summary: ruleSummary(hits, keywords, combo), findings: [], hits, keywords, combo, rw, ai: null };
   render(state);
 
   // 2) AI層：抽出のみ（判定はしない）。抽出した文字列を検証してルール層に合流させる
@@ -315,8 +311,6 @@ function render(s) {
     for (const k of s.keywords) h += `<span class="tag">要配慮の手がかり: ${esc(k)}</span>`;
     h += `</div></div>`;
   }
-  h += `<details><summary>参照資料（関連する節）</summary><div class="note">` +
-    (s.ctx.map((c) => `<p><b>${esc(c.source)}</b><br>${esc(c.text.slice(0, 220))}…</p>`).join("") || "—") + `</div></details>`;
   $("#out").innerHTML = h;
 
   for (const b of document.querySelectorAll("#cp, .cp2")) b.onclick = async () => {
