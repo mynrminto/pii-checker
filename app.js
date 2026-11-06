@@ -1,5 +1,5 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=29";
-import { findDiseases } from "./diseases.js?v=29";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=30";
+import { findDiseases } from "./diseases.js?v=30";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -49,7 +49,7 @@ new PerformanceObserver((list) => {
 function updateOnline() {
   const off = !navigator.onLine;
   $("#shield").classList.toggle("offline", off);
-  $("#online").innerHTML = off ? "現在 <b>オフライン</b>で動作中" : "オフラインでも動作: <b>可</b>（モデル読み込み後）";
+  $("#online").innerHTML = off ? "<b>オフライン</b>で動作中" : "オフライン動作 <b>可</b>";
 }
 addEventListener("online", updateOnline); addEventListener("offline", updateOnline); updateOnline();
 

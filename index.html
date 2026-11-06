@@ -4,165 +4,215 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>個人情報チェッカー</title>
-<meta name="description" content="外部AIやSNSに貼る前に、個人を特定しうる情報が含まれていないかをブラウザ内で判定し、必要最小限の匿名化案を示します。テキストはどこにも送信されません。">
+<meta name="description" content="外部AIやSNSに渡す前のテキストを、ブラウザ内だけで判定し、必要最小限の匿名化案と根拠を示します。テキストはどこにも送信されません。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
 <style>
   :root{
-    --paper:#F4F6F8; --sheet:#FFFFFF; --ink:#16213A; --ink-2:#4A5568; --ink-3:#7B8794; --rule:#D5DBE3; --rule-2:#E9EDF1;
-    --ok:#2A6A4B; --caution:#9A6B12; --danger:#B8321F; --link:#1F4E8C;
-    --ok-bg:#E6F1EB; --caution-bg:#F6EEDC; --danger-bg:#F8E5E1;
-    --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
-    --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+    --bg:#FFFFFF; --bg-2:#F6F8FA; --surface:#FFFFFF; --ink:#0F1B2D; --ink-2:#44546A; --ink-3:#7A889A;
+    --line:#E3E8EE; --line-2:#EEF1F5; --brand:#1E3A8A; --brand-2:#2749A6; --brand-soft:#EEF2FB;
+    --ok:#1F7A4D; --caution:#9A6700; --danger:#B42318;
+    --ok-bg:#E8F5EE; --caution-bg:#FBF1DB; --danger-bg:#FCE9E6;
+    --shadow-1:0 1px 2px rgba(15,27,45,.05);
+    --shadow-2:0 1px 2px rgba(15,27,45,.04),0 12px 32px -12px rgba(15,27,45,.14);
+    --r:12px; --r-s:8px;
+    --jp:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+    --num:"Inter","Zen Kaku Gothic New",sans-serif;
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --paper:#111519; --sheet:#1A2027; --ink:#E7EBF0; --ink-2:#B5BDC8; --ink-3:#8793A1; --rule:#303945; --rule-2:#232B35;
-    --ok:#6FBF93; --caution:#D9A64A; --danger:#E8785F; --link:#8AB4F8;
-    --ok-bg:#1B2E25; --caution-bg:#2E2718; --danger-bg:#33201C;
+    --bg:#0E131A; --bg-2:#131A23; --surface:#171E28; --ink:#E9EEF4; --ink-2:#B3BECC; --ink-3:#7F8C9B;
+    --line:#2A3441; --line-2:#1F2833; --brand:#8FB0FF; --brand-2:#A9C2FF; --brand-soft:#1B2740;
+    --ok:#5FC48E; --caution:#E0B45C; --danger:#F08A7A; --ok-bg:#16291F; --caution-bg:#2C2415; --danger-bg:#331D1A;
+    --shadow-1:0 1px 2px rgba(0,0,0,.3); --shadow-2:0 1px 2px rgba(0,0,0,.3),0 12px 32px -12px rgba(0,0,0,.5);
   }}
   :root[data-theme="dark"]{
-    --paper:#111519; --sheet:#1A2027; --ink:#E7EBF0; --ink-2:#B5BDC8; --ink-3:#8793A1; --rule:#303945; --rule-2:#232B35;
-    --ok:#6FBF93; --caution:#D9A64A; --danger:#E8785F; --link:#8AB4F8;
-    --ok-bg:#1B2E25; --caution-bg:#2E2718; --danger-bg:#33201C;
+    --bg:#0E131A; --bg-2:#131A23; --surface:#171E28; --ink:#E9EEF4; --ink-2:#B3BECC; --ink-3:#7F8C9B;
+    --line:#2A3441; --line-2:#1F2833; --brand:#8FB0FF; --brand-2:#A9C2FF; --brand-soft:#1B2740;
+    --ok:#5FC48E; --caution:#E0B45C; --danger:#F08A7A; --ok-bg:#16291F; --caution-bg:#2C2415; --danger-bg:#331D1A;
+    --shadow-1:0 1px 2px rgba(0,0,0,.3); --shadow-2:0 1px 2px rgba(0,0,0,.3),0 12px 32px -12px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.75 var(--body);font-feature-settings:"palt"}
-  a{color:var(--link)}
-  a:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--link);outline-offset:2px}
-  b,strong{font-weight:700}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.8 var(--jp);font-feature-settings:"palt";letter-spacing:.01em}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  a:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
   p{margin:0}
+  .container{max-width:1120px;margin:0 auto;padding:0 24px}
+  @media (max-width:640px){.container{padding:0 18px}}
 
-  /* ---------- 上部バー：送信なしの宣言 ---------- */
-  .topbar{border-bottom:1px solid var(--rule);background:var(--sheet)}
-  .topbar-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
-  .brand{font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink);letter-spacing:.02em;margin-right:auto}
-  .shield{display:flex;align-items:center;gap:10px}
-  .shield svg{width:18px;height:18px;color:var(--ok);flex:none}
-  .shield b{color:var(--ok);font-weight:700}
-  .shield.offline b{color:var(--link)} .shield.alert #netcount{color:var(--danger)}
-  .shield-row{display:flex;gap:14px;flex-wrap:wrap}
-  .shield details{position:relative}
-  .shield summary{cursor:pointer;color:var(--link);list-style:none}
-  .shield summary::-webkit-details-marker{display:none}
-  .shield details[open] .pop{display:block}
-  .pop{display:none;position:absolute;right:0;top:26px;z-index:5;width:min(420px,88vw);background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;box-shadow:0 8px 24px rgba(22,33,58,.12);line-height:1.7}
+  /* ---------- ナビ ---------- */
+  .nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
+  .nav-in{height:60px;display:flex;align-items:center;gap:28px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15.5px;color:var(--ink);letter-spacing:.01em}
+  .logo-mark{width:26px;height:26px;border-radius:7px;background:var(--brand);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .logo-mark svg{width:15px;height:15px;color:#fff}
+  .nav-links{display:flex;gap:22px;margin-left:8px;font-size:14px}
+  .nav-links a{color:var(--ink-2)}
+  .nav-links a:hover{color:var(--ink);text-decoration:none}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+  .status .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+  .status b{color:var(--ink);font-weight:600;font-family:var(--num)}
+  .status.alert .dot{background:var(--danger)} .status.offline .dot{background:var(--brand)}
+  .status details{position:relative} .status summary{list-style:none;cursor:pointer;color:var(--brand)} .status summary::-webkit-details-marker{display:none}
+  .pop{position:absolute;right:0;top:30px;z-index:30;width:min(440px,90vw);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow-2);font-size:13.5px;line-height:1.75;color:var(--ink-2)}
+  .ghost-link{font-size:14px;color:var(--ink-2)}
+  @media (max-width:860px){.nav-links{display:none}.status span.hide-s{display:none}}
 
-  /* ---------- レイアウト ---------- */
-  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 72px}
-  .lead{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:28px;max-width:760px}
-  h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,4.2vw,40px);line-height:1.3;margin:0;letter-spacing:.01em}
-  .lead p{font-size:15.5px;color:var(--ink-2)}
-  .lead .policy{border-left:3px solid var(--ink);padding-left:14px;color:var(--ink)}
-  .lead .caveat{font-size:13.5px;color:var(--ink-2)}
-  .lead .caveat b{color:var(--danger)}
+  /* ---------- ヒーロー ---------- */
+  .hero{padding:72px 0 40px}
+  @media (max-width:640px){.hero{padding:44px 0 28px}}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:40px;align-items:end}
+  @media (max-width:860px){.hero-grid{grid-template-columns:1fr}}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:5px 12px;font-weight:600;margin-bottom:20px}
+  h1{font-size:clamp(32px,4.6vw,52px);line-height:1.22;letter-spacing:-.01em;font-weight:900;margin:0 0 18px;max-width:18em}
+  .hero p.sub{font-size:17px;line-height:1.85;color:var(--ink-2);max-width:36em}
+  .hero-facts{display:grid;gap:14px}
+  .fact{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);box-shadow:var(--shadow-1)}
+  .fact svg{width:20px;height:20px;color:var(--brand);flex:none;margin-top:2px}
+  .fact b{display:block;font-size:14.5px;font-weight:700}
+  .fact span{font-size:13px;color:var(--ink-2);line-height:1.65}
 
-  .work{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:28px;align-items:start}
+  /* ---------- ツール（アプリウィンドウ） ---------- */
+  .app{margin:28px 0 0}
+  .window{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-2);overflow:hidden}
+  .titlebar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg-2);font-size:13px;color:var(--ink-2)}
+  .titlebar .dots{display:flex;gap:6px} .titlebar .dots i{width:10px;height:10px;border-radius:50%;background:var(--line);display:block}
+  .titlebar .tb-title{margin:0 auto;font-weight:600;color:var(--ink)}
+  .titlebar .tb-right{font-family:var(--num);font-size:12.5px}
+  .work{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
   @media (max-width:860px){.work{grid-template-columns:1fr}}
-  .pane{background:var(--sheet);border:1px solid var(--rule);border-radius:10px}
-  .input{padding:18px;position:sticky;top:16px}
-  @media (max-width:860px){.input{position:static}}
-  .pane-t{font-family:var(--display);font-weight:700;font-size:15px;margin:0 0 10px;color:var(--ink)}
-  textarea{width:100%;min-height:260px;padding:14px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);font:15px/1.8 var(--body);resize:vertical}
+  .pane-in{padding:22px;border-right:1px solid var(--line)}
+  @media (max-width:860px){.pane-in{border-right:0;border-bottom:1px solid var(--line)}}
+  .pane-out{padding:22px;background:var(--bg-2)}
+  .label{font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .linkbtn{font:inherit;font-size:12.5px;font-weight:600;color:var(--brand);background:none;border:0;padding:0;cursor:pointer}
+  .linkbtn:hover{text-decoration:underline}
+  textarea{width:100%;min-height:230px;padding:14px;border:1px solid var(--line);border-radius:var(--r-s);background:var(--surface);color:var(--ink);font:15px/1.8 var(--jp);resize:vertical;transition:border-color .15s,box-shadow .15s}
+  textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent);outline:none}
   textarea::placeholder{color:var(--ink-3)}
-  .row{display:flex;gap:10px;align-items:center;margin:12px 0 0;flex-wrap:wrap}
-  button{font:inherit;font-weight:700;padding:11px 22px;border:0;border-radius:8px;background:var(--ink);color:var(--sheet);cursor:pointer}
-  button:disabled{opacity:.5;cursor:wait}
-  .ghost{background:transparent;color:var(--ink-2);border:1px solid var(--rule);font-weight:500}
-  .opt{margin-top:12px;font-size:13px;color:var(--ink-2);display:flex;gap:8px;align-items:flex-start;line-height:1.6}
-  .opt input{margin-top:3px}
-  .note{font-size:12.5px;color:var(--ink-3);line-height:1.6}
+  .row{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  button{font:inherit;font-weight:700;padding:10px 20px;border:1px solid transparent;border-radius:var(--r-s);background:var(--brand);color:#fff;cursor:pointer;transition:background .15s}
+  button:hover{background:var(--brand-2)}
+  button:disabled{opacity:.55;cursor:wait}
+  .ghost{background:var(--surface);color:var(--ink-2);border-color:var(--line);font-weight:500}
+  .ghost:hover{background:var(--bg-2);color:var(--ink)}
+  .opt{margin-top:14px;font-size:13px;color:var(--ink-2);display:flex;gap:9px;align-items:flex-start;line-height:1.65}
+  .opt input{margin:4px 0 0;accent-color:var(--brand)}
+  .note{font-size:12.5px;color:var(--ink-3);line-height:1.65}
   #gpu,#st{margin-top:8px}
   .err{color:var(--danger)}
 
   /* ---------- 結果 ---------- */
-  #out{display:flex;flex-direction:column;gap:14px;min-height:260px}
-  #out:empty{border:1px dashed var(--rule);border-radius:10px;display:flex;align-items:center;justify-content:center}
+  #out{display:flex;flex-direction:column;gap:12px;min-height:300px}
+  #out:empty{border:1px dashed var(--line);border-radius:var(--r);display:flex;align-items:center;justify-content:center;background:var(--surface)}
   #out:empty::before{content:"判定結果はここに表示されます";color:var(--ink-3);font-size:14px}
-  .card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:18px 20px}
-  .card>b{display:block;font-family:var(--display);font-size:15px;margin-bottom:8px}
-  /* 判定印 */
-  .verdict{display:inline-block;font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.12em;padding:6px 16px;border:2.5px solid currentColor;border-radius:6px;transform:rotate(-1.5deg);background:var(--sheet);white-space:nowrap}
-  .v-ok{color:var(--ok)} .v-caution{color:var(--caution)} .v-danger{color:var(--danger)}
-  .verdict-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
-  .verdict-sub{font-size:14px;color:var(--ink-2)}
-  .note.mode{margin:0 0 8px}
-  .basis{font-weight:700;font-size:14px;margin:4px 0 4px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow-1)}
+  .card>b{display:block;font-size:14.5px;margin-bottom:6px}
+  .verdict-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .verdict{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;padding:6px 12px 6px 10px;border-radius:999px;letter-spacing:.02em}
+  .verdict::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+  .v-ok{color:var(--ok);background:var(--ok-bg)} .v-caution{color:var(--caution);background:var(--caution-bg)} .v-danger{color:var(--danger);background:var(--danger-bg)}
+  .verdict-sub{font-size:14.5px;font-weight:600}
+  .note.mode{margin:4px 0 8px}
+  .basis{font-weight:700;font-size:14px;margin:6px 0 2px}
   .card .note.err{display:inline}
-  .finding{border-left:3px solid var(--rule);padding:4px 12px;margin:10px 0}
+  .finding{border-left:2px solid var(--line);padding:4px 12px;margin:10px 0}
   .finding b{display:block}
   .before{text-decoration:line-through;color:var(--danger);text-decoration-thickness:1.5px}
   .after{color:var(--ok);font-weight:700}
-  .finding .note a{color:var(--link)}
-  .rwview{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:14px;margin-top:6px;font-size:15px;line-height:1.9;white-space:pre-wrap}
+  .rwview{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-s);padding:14px;margin-top:6px;font-size:15px;line-height:1.9;white-space:pre-wrap}
   .rwview mark{background:var(--ok-bg);color:inherit;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--ok)}
   .hidden{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
-  .warn-inline{font-size:13px;color:var(--caution);margin:8px 0;padding-left:12px;border-left:3px solid var(--caution)}
-  .tag{display:inline-block;font-size:12px;border:1px solid var(--rule);border-radius:6px;padding:1px 8px;margin:3px 6px 3px 0;color:var(--ink-2)}
+  .warn-inline{font-size:13px;color:var(--caution);margin:8px 0;padding:8px 12px;background:var(--caution-bg);border-radius:var(--r-s)}
+  .tag{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:1px 8px;margin:3px 6px 3px 0;color:var(--ink-2);background:var(--surface)}
   .tag.high{border-color:var(--danger);color:var(--danger)} .tag.medium{border-color:var(--caution);color:var(--caution)}
   .tag.ai{border-style:dashed}
-  #out details summary{cursor:pointer;color:var(--ink-3);font-size:13px}
 
-  /* ---------- 考え方と仕組み ---------- */
-  .info{margin-top:72px;display:flex;flex-direction:column;gap:20px}
-  .info-head{max-width:760px}
-  .info h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.4vw,32px);line-height:1.35;margin:0 0 8px}
-  .info h3{font-family:var(--display);font-weight:700;font-size:20px;margin:22px 0 2px;display:flex;align-items:center;gap:10px}
-  .info .num{width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--sheet);display:inline-flex;align-items:center;justify-content:center;font:700 13px var(--body);flex:none}
-  .info p{font-size:14.5px;line-height:1.75;color:var(--ink-2)}
-  .info-head p{color:var(--ink);font-size:15.5px}
-  .info ul{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.85;color:var(--ink)}
-  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-  .col{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
-  .col-t{font-family:var(--display);font-size:20px;font-weight:800}
-  .keep .col-t{color:var(--ok)} .gen .col-t{color:var(--caution)} .del .col-t{color:var(--danger)}
-  .col-s{font-size:12.5px;color:var(--ink-3);margin-top:2px}
-  .box{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 20px;display:flex;flex-direction:column;gap:8px}
-  .box.soft{background:var(--paper)}
-  .box.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-  .box.dark .box-l{color:var(--paper);opacity:.75}
-  .box-t{font-family:var(--display);font-size:15.5px;font-weight:700;color:var(--ink)}
-  .box.dark .box-t{color:var(--paper)}
-  .box-l{font-size:12.5px;font-weight:700;color:var(--ink-3)}
-  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:700;color:var(--ink-3)}
-  .chip{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:700;color:#fff}
+  /* ---------- セクション共通 ---------- */
+  section.block{padding:72px 0}
+  @media (max-width:640px){section.block{padding:48px 0}}
+  section.block.alt{background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .sec-head{max-width:640px;margin-bottom:32px}
+  .sec-head h2{font-size:clamp(24px,3vw,32px);line-height:1.35;letter-spacing:-.005em;font-weight:900;margin:0 0 10px}
+  .sec-head p{color:var(--ink-2);font-size:15.5px}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+  @media (max-width:860px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){.grid3,.grid2,.grid4{grid-template-columns:1fr}}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow-1)}
+  .tile h3{font-size:17px;margin:0 0 6px;font-weight:700}
+  .tile .sub{font-size:13px;color:var(--ink-3);margin-bottom:10px}
+  .tile ul{margin:0;padding-left:18px;font-size:14px;line-height:1.9;color:var(--ink)}
+  .tile p{font-size:14.5px;color:var(--ink-2)}
+  .tile.keep{border-top:3px solid var(--ok)} .tile.gen{border-top:3px solid var(--caution)} .tile.del{border-top:3px solid var(--danger)}
+  .keep h3{color:var(--ok)} .gen h3{color:var(--caution)} .del h3{color:var(--danger)}
+
+  /* 組合せの図 */
+  .combo{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;box-shadow:var(--shadow-1);margin-top:16px}
+  @media (max-width:860px){.combo{grid-template-columns:1fr}}
+  .combo h3{font-size:18px;margin:0 0 8px}
+  .combo p{font-size:14.5px;color:var(--ink-2)}
+  .chain{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:700;color:var(--ink-3);margin:8px 0}
+  .chip{display:inline-block;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700}
   .chip.warn{background:var(--caution-bg);color:var(--caution)} .chip.good{background:var(--ok-bg);color:var(--ok)}
-  .chip.bad{background:var(--danger)} .chip.ok{background:var(--ok)} .chip.warn2{background:var(--caution)}
-  .chips{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
-  .flow{display:grid;grid-template-columns:1fr 26px 1fr 26px 1fr 26px 1fr;align-items:stretch}
-  .step{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
-  .step.rule{border:2px solid var(--ink)} .step.ai{border:2px dashed var(--caution)}
-  .step-l{font-size:12px;font-weight:700;color:var(--ink-3)} .rule .step-l{color:var(--ink)} .ai .step-l{color:var(--caution)}
-  .step-t{font-family:var(--display);font-size:15.5px;font-weight:700;color:var(--ink)} .step p{font-size:13px}
-  .arrow{display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink-3)}
-  .ex{display:grid;grid-template-columns:1fr 36px 1fr;align-items:center;font-size:14.5px;line-height:1.9}
-  .ex i{font-style:normal;color:#F2A79B;text-decoration:line-through;text-decoration-thickness:1.5px} .ex b{color:#9ADBB8}
-  .box.dark .arrow{color:var(--paper);opacity:.6}
-  .refs ul{font-size:13.5px;line-height:1.8;color:var(--ink-2)} .refs a{font-weight:600}
-  @media (max-width:720px){
-    .grid3,.grid2,.flow,.ex{grid-template-columns:1fr}
-    .arrow{transform:rotate(90deg);padding:2px 0}
-    .topbar-in{gap:8px}
-  }
-  footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-3);line-height:1.7}
-  @media (prefers-reduced-motion:no-preference){
-    .verdict{animation:stamp .28s cubic-bezier(.2,.9,.3,1.2) both}
-    @keyframes stamp{from{transform:rotate(-1.5deg) scale(1.25);opacity:0}to{transform:rotate(-1.5deg) scale(1);opacity:1}}
-  }
+  .chip.bad{background:var(--danger);color:#fff} .chip.ok{background:var(--ok);color:#fff} .chip.warn2{background:var(--caution);color:#fff}
+
+  /* 仕組み */
+  .step{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow-1)}
+  .step .n{font-family:var(--num);font-size:12.5px;font-weight:600;color:var(--ink-3);letter-spacing:.04em;margin-bottom:10px}
+  .step h3{font-size:16.5px;margin:0 0 6px}
+  .step p{font-size:14px;color:var(--ink-2)}
+  .step.ai{border-color:var(--caution)} .step.rule{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset,var(--shadow-1)}
+  .step .badge{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .step.ai .badge{background:var(--caution-bg);color:var(--caution)} .step.rule .badge{background:var(--brand-soft);color:var(--brand)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
+
+  /* 例 */
+  .example{background:var(--ink);color:#fff;border-radius:var(--r);padding:26px 28px;margin-top:16px}
+  .example .lbl{font-size:12.5px;font-weight:700;opacity:.7;margin-bottom:10px}
+  .ex{display:grid;grid-template-columns:1fr 40px 1fr;align-items:center;font-size:14.5px;line-height:1.9}
+  .ex i{font-style:normal;color:#F5A596;text-decoration:line-through;text-decoration-thickness:1.5px} .ex b{color:#9FE0BC}
+  .ex .arrow{text-align:center;opacity:.6;font-size:20px}
+  @media (max-width:640px){.ex{grid-template-columns:1fr}.ex .arrow{transform:rotate(90deg)}}
+  :root[data-theme="dark"] .example,:root:not([data-theme="light"]) .example{color:#fff}
+  @media (prefers-color-scheme:dark){.example{background:#1F2A3C}}
+
+  /* 根拠資料 */
+  .refs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:860px){.refs{grid-template-columns:1fr}}
+  .ref{display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;color:var(--ink);box-shadow:var(--shadow-1);transition:border-color .15s}
+  .ref:hover{text-decoration:none;border-color:var(--brand)}
+  .ref b{display:block;font-size:14.5px;color:var(--brand);margin-bottom:2px}
+  .ref span{font-size:13px;color:var(--ink-2);line-height:1.65}
+
+  footer{border-top:1px solid var(--line);padding:28px 0 40px;font-size:13px;color:var(--ink-3);line-height:1.8}
+  footer .f-in{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 </style>
 </head>
 <body>
-<header class="topbar">
-  <div class="topbar-in">
-    <span class="brand">個人情報チェッカー</span>
-    <div class="shield" id="shield">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
-      <div class="shield-row">
-        <span>送信先サーバー <b>なし</b></span>
-        <span>判定中の通信 <b id="netcount">0 件</b></span>
-        <span id="online">オフラインでも動作 <b>可</b></span>
+<nav class="nav" aria-label="主要">
+  <div class="container nav-in">
+    <a class="logo" href="#top" aria-label="個人情報チェッカー">
+      <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      個人情報チェッカー
+    </a>
+    <div class="nav-links">
+      <a href="#principle">考え方</a>
+      <a href="#how">仕組み</a>
+      <a href="#refs">根拠資料</a>
+      <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>
+    </div>
+    <div class="nav-right">
+      <div class="status" id="shield">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="hide-s">送信先サーバー <b>なし</b></span>
+        <span>通信 <b id="netcount">0 件</b></span>
+        <span id="online" class="hide-s">オフライン動作 <b>可</b></span>
         <details><summary>確かめ方</summary>
           <div class="pop">
             ① 開発者ツール（F12）の Network タブを開いたまま「判定する」を押しても、新しい通信は発生しません（初回のモデル取得を除く）。<br>
@@ -173,108 +223,136 @@
       </div>
     </div>
   </div>
-</header>
+</nav>
 
-<main class="wrap">
-  <section class="lead">
-    <h1>外部AIに貼る前に、<br>誰のことか分からない文章にする。</h1>
-    <p>クラウドAI・SNS・公開ページに出す前のテキストを、ブラウザの中だけで判定します。個人を特定しうる情報を見つけ、必要最小限の書き換え案と、その根拠を示します。</p>
-    <p class="policy">残すのは疾患・検査・治療、年代、性別、経過。削るのは氏名・連絡先・市町村以下の地名・施設名・暦日・職業。知りたい内容が消える書き換えはしません。</p>
-    <p class="caveat"><b>これはスクリーニングであり、安全を保証するものではありません。</b>ルールと小型モデルによる一次チェックには見落としも過検出もあります。「問題なし」と出ても最終判断は利用者ご自身と所属施設の規程に従ってください。</p>
-  </section>
-
-  <section class="work" aria-label="判定">
-    <div class="pane input">
-      <div class="pane-t">判定したいテキスト</div>
-      <textarea id="t" placeholder="ここに貼り付け（6000文字まで）。例：学童期の男児。ファンコニ貧血疑いで骨髄検査を予定。見るべき項目は？"></textarea>
-      <div class="row">
-        <button id="go">判定する</button>
-        <button id="clr" class="ghost">クリア</button>
+<main id="top">
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div>
+          <span class="kicker">医療者向け・ブラウザ完結・無料</span>
+          <h1>外部AIに渡す前の、<br>最後の確認。</h1>
+          <p class="sub">症例要約や質問文に個人を特定しうる情報がないかを、ブラウザの中だけで判定します。必要最小限の書き換え案と、法令・指針に基づく根拠を示します。</p>
+        </div>
+        <div class="hero-facts" aria-label="特長">
+          <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/></svg><div><b>テキストはどこにも送信されません</b><span>サーバーが存在しない静的サイト。判定中の通信件数を常時表示し、オフラインでも動作します。</span></div></div>
+          <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/></svg><div><b>疾患名は残し、識別子だけを削ります</b><span>年代・性別・経過は保持。氏名・連絡先・地名・施設・暦日・職業を削り、根拠を示します。</span></div></div>
+          <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6"/></svg><div><b>ルールは公開、判定は決定論的</b><span>指定難病・小児慢性特定疾病・届出感染症のリストと姓辞書を同梱。例文テストセット付きで検証できます。</span></div></div>
+        </div>
       </div>
-      <label class="opt"><input type="checkbox" id="llm" checked><span>AIで固有名（氏名・地名・施設・職業）と稀少疾患を追加抽出する。ブラウザ内の小型モデル（初回のみ約1GB）。判定はルールが行います。</span></label>
-      <p class="note" id="gpu">準備中…</p>
-      <p class="note" id="st"></p>
-    </div>
-    <div id="out" aria-live="polite"></div>
-  </section>
 
-  <!-- ===== 考え方と仕組み ===== -->
-  <section class="info" aria-labelledby="info-h">
-    <div class="info-head">
-      <h2 id="info-h">考え方と仕組み</h2>
-      <p>原則は「必要十分な最低限の匿名化」。個人を特定できなくするために必要な部分だけを削り、臨床的に意味のある情報は最大限残します。</p>
-    </div>
-
-    <h3>残す・一般化・削る</h3>
-    <div class="grid3">
-      <div class="col keep"><div class="col-t">残す</div><div class="col-s">臨床的に意味があり、識別子にならない</div>
-        <ul><li>疾患名・検査・治療・薬剤（稀少疾患も）</li><li>年代（学童期、40代）</li><li>性別</li><li>症状と経過の論理</li></ul></div>
-      <div class="col gen"><div class="col-t">一般化</div><div class="col-s">情報は残しつつ精度を落とす</div>
-        <ul><li>5歳 → 幼児期、47歳 → 40代</li><li>2024年3月13日 → 基準日＋3日</li><li>116歳 → 100歳以上（同意要検討）</li><li>国内2例目 → 極めて稀な</li></ul></div>
-      <div class="col del"><div class="col-t">削る</div><div class="col-s">識別に直結し、臨床的な意味が薄い（<a href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener">学会指針</a>）</div>
-        <ul><li>氏名・イニシャル・ID・連絡先</li><li>市町村以下の地名、施設名、「当院」</li><li>受診日などの暦日、「昨日の当直で」</li><li>学校名・職業・家族構成</li></ul></div>
-    </div>
-
-    <div class="box">
-      <div class="box-t">単独では無害でも、組合せで一人になる</div>
-      <p>氏名がなくても準識別子が重なると特定されます。稀少疾患や届出・公表される感染症は、公的な発表と照合されやすい「特異な記述」です。</p>
-      <div class="chain"><span class="chip warn">116歳</span>＋<span class="chip warn">屋久島</span>＋<span class="chip warn">ジカ熱</span>＝<span class="chip bad">事実上一人に特定</span></div>
-      <div class="chain"><span class="chip good">100歳以上</span>＋<span class="chip good">（地名削除）</span>＋<span class="chip good">ジカ熱</span>＝<span class="chip ok">疾患の情報は残る</span></div>
-    </div>
-
-    <div class="grid2">
-      <div class="box soft"><div class="box-t">法律の視点：容易照合性</div><p>文章から氏名を消しても、書き手の手元にはカルテがあり照合できるため、法律上は書き手の側からは個人情報のままです。「外部から特定できないか」の前に「患者の記述を外に出す必要があるか」を考えます。</p></div>
-      <div class="box soft"><div class="box-t">入力先の視点：契約で決まる</div><p>個人契約の一般向けAIは入力が保持される規約が多く「第三者提供」に近い扱いです。「保存しない・学習に使わない」を契約で担保した組織契約なら「委託」。可否は院内規程で決まります（<a href="https://www.mhlw.go.jp/content/10808000/001716290.pdf" target="_blank" rel="noopener">医療情報システム安全管理GL 7.0版</a> Q&amp;A 企画管理編 Q18）。</p></div>
-    </div>
-
-    <h3>ツールの仕組み</h3>
-    <div class="flow">
-      <div class="step"><div class="step-l">入力</div><div class="step-t">貼り付けたテキスト</div><p>症例要約、質問文、発表原稿など。どこにも送信・保存されません。</p></div>
-      <div class="arrow" aria-hidden="true">→</div>
-      <div class="step ai"><div class="step-l">AI層（WebGPU・任意）</div><div class="step-t">固有名の抽出と希少性推定</div><p>小型LLM（1.5B）をブラウザ内で実行。辞書にない氏名、接尾辞のない地名、施設名、職業を本文から抜き出し、本文に実在するか・名前らしい形かを検証。リスト未収載の疾患名の希少性も推定。<b>判定はしません。</b></p></div>
-      <div class="arrow" aria-hidden="true">→</div>
-      <div class="step rule"><div class="step-l">ルール層（決定論的）</div><div class="step-t">検出・判定・書き換え・根拠</div><p>正規表現・姓辞書・疾患リスト（指定難病348＋小児慢性特定疾病＋届出感染症）で検出し、AIが抽出した語も合流。準識別子の組合せを評価して判定を決め、書き換え文と変更理由を生成。<b>AIを使わない場合も、ここだけで即時に動きます。</b></p></div>
-      <div class="arrow" aria-hidden="true">→</div>
-      <div class="step"><div class="step-l">出力</div><div class="chips"><span class="chip bad">入力不可</span><span class="chip warn2">注意</span><span class="chip ok">問題なし</span></div><p>判定＋書き換え案＋変更箇所と理由。コピーしてそのまま使えます。</p></div>
-    </div>
-    <p class="note">貼り付けた直後にルール層が先に走って暫定結果を表示し、AI抽出が終わると同じルール層で再判定します。ルールが常に最終判定者です。</p>
-
-    <div class="grid2">
-      <div class="box"><div class="box-t">AIは「抽出器」、ルールが「判定器」</div><p>小型モデルは判定や書き換えを任せると誤りが多い一方、「本文中の人名・地名を抜き出す」作業は正確です。そこで AI には抽出だけをさせ、抽出した文字列が本文に実在することを検証してから、ルール層が判定・置換します。</p></div>
-      <div class="box"><div class="box-t">送信していないことを自分で確かめられる</div><p>静的サイトでサーバーが存在しません。判定中の外部通信件数を上部に表示し、Wi-Fi を切っても動作します。広告・アクセス解析なし、ソースコードは公開。</p></div>
-    </div>
-
-    <div class="box dark">
-      <div class="box-l">書き換えの例</div>
-      <div class="ex">
-        <div>山田太郎くん、<i>5歳</i>男児。<i>2024年3月10日</i>に<i>大阪府堺市</i>の<i>当院</i>小児科へ発熱5日目で受診。川崎病と診断しIVIG投与。母親の連絡先 <i>090-1234-5678</i>。</div>
-        <div class="arrow" aria-hidden="true">→</div>
-        <div>患者、<b>幼児期</b>男児。<b>某日</b>に<b>一般病院</b>小児科へ発熱5日目で受診。川崎病と診断しIVIG投与。母親の連絡先<b>（電話番号削除）</b>。</div>
+      <div class="app">
+        <div class="window">
+          <div class="titlebar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="tb-title">判定</span><span class="tb-right">ローカル処理</span></div>
+          <div class="work">
+            <div class="pane-in">
+              <div class="label"><span>判定したいテキスト</span><button type="button" class="linkbtn" id="sample">例文を入れる</button></div>
+              <textarea id="t" placeholder="ここに貼り付け（6000文字まで）"></textarea>
+              <div class="row">
+                <button id="go">判定する</button>
+                <button id="clr" class="ghost">クリア</button>
+              </div>
+              <label class="opt"><input type="checkbox" id="llm" checked><span>AIで固有名（氏名・地名・施設・職業）と稀少疾患を追加抽出する。ブラウザ内の小型モデル（初回のみ約1GB）。判定はルールが行います。</span></label>
+              <p class="note" id="gpu">準備中…</p>
+              <p class="note" id="st"></p>
+            </div>
+            <div class="pane-out"><div id="out" aria-live="polite"></div></div>
+          </div>
+        </div>
+        <p class="note" style="margin-top:12px">本ツールはスクリーニングであり、安全性や法令適合を保証するものではありません。見落とし・過検出があります。「問題なし」と出ても、最終判断は利用者ご自身と所属施設の規程に従ってください。</p>
       </div>
     </div>
+  </section>
 
-    <div class="box refs">
-      <div class="box-t">根拠となる資料（原典）</div>
-      <ul>
-        <li><a href="https://laws.e-gov.go.jp/law/415AC0000000057" target="_blank" rel="noopener">個人情報の保護に関する法律</a>（e-Gov 法令検索）— 個人情報・個人識別符号・要配慮個人情報・仮名加工／匿名加工情報の定義</li>
-        <li><a href="https://www.ppc.go.jp/personalinfo/legal/iryoukaigo_guidance/" target="_blank" rel="noopener">医療・介護関係事業者における個人情報の適切な取扱いのためのガイダンス</a>（個人情報保護委員会・厚生労働省、令和8年4月一部改正）</li>
-        <li><a href="https://www.mhlw.go.jp/content/10808000/001716290.pdf" target="_blank" rel="noopener">医療情報システムの安全管理に関するガイドライン 第7.0版（概説編）</a>（厚生労働省、2026年6月）— 企画管理編・Q&amp;A（企画管理編 Q18）は同ページ掲載</li>
-        <li><a href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener">症例報告を含む医学論文及び学会研究会発表における患者プライバシー保護に関する指針</a>（外科関連学会協議会、平成27年改正）— 氏名・住所・日付・施設名・顔写真の扱い</li>
-        <li><a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000084783.html" target="_blank" rel="noopener">指定難病の一覧（告示番号1〜348）</a>（厚生労働省、令和8年4月時点）— 稀少疾患リストの出典</li>
-        <li><a href="https://www.shouman.jp/pdf/contents/03_list_of_diseases.pdf" target="_blank" rel="noopener">小児慢性特定疾病 対象疾病一覧</a>（小児慢性特定疾病情報センター）— 小児の稀少疾患リストの出典</li>
-        <li><a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/kekkaku-kansenshou11/01.html" target="_blank" rel="noopener">感染症法に基づく医師の届出</a>（厚生労働省）— 届出・公表対象感染症の出典</li>
-        <li><a href="https://www8.cao.go.jp/iryou/hourei/pdf/guideline.pdf" target="_blank" rel="noopener">次世代医療基盤法ガイドライン</a>（内閣府ほか、令和8年10月改定）— 匿名加工・仮名加工の加工基準</li>
-        <li><a href="https://www.ppc.go.jp/personalinfo/legal/guidelines_anonymous/" target="_blank" rel="noopener">個人情報保護法ガイドライン（仮名加工情報・匿名加工情報編）</a>（個人情報保護委員会）— 「特異な記述」の削除</li>
-      </ul>
-      <p class="note">URL は 2026年11月時点。改版でページが移動することがあるため、見つからない場合は資料名で検索してください。</p>
+  <section class="block alt" id="principle">
+    <div class="container">
+      <div class="sec-head">
+        <h2>必要十分な、最低限の匿名化。</h2>
+        <p>個人を特定できなくするために必要な部分だけを削り、臨床的に意味のある情報は最大限残します。知りたい内容が消える書き換えはしません。</p>
+      </div>
+      <div class="grid3">
+        <div class="tile keep"><h3>残す</h3><div class="sub">臨床的に意味があり、識別子にならない</div>
+          <ul><li>疾患名・検査・治療・薬剤（稀少疾患も）</li><li>年代（学童期、40代）</li><li>性別</li><li>症状と経過の論理</li></ul></div>
+        <div class="tile gen"><h3>一般化</h3><div class="sub">情報は残しつつ精度を落とす</div>
+          <ul><li>5歳 → 幼児期、47歳 → 40代</li><li>2024年3月13日 → 基準日＋3日</li><li>116歳 → 100歳以上（同意要検討）</li><li>国内2例目 → 極めて稀な</li></ul></div>
+        <div class="tile del"><h3>削る</h3><div class="sub">識別に直結し、臨床的な意味が薄い（<a href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener">学会指針</a>）</div>
+          <ul><li>氏名・イニシャル・ID・連絡先</li><li>市町村以下の地名、施設名、「当院」</li><li>受診日などの暦日、「昨日の当直で」</li><li>学校名・職業・家族構成</li></ul></div>
+      </div>
+      <div class="combo">
+        <div>
+          <h3>単独では無害でも、組合せで一人になる</h3>
+          <p>氏名がなくても準識別子が重なると特定されます。稀少疾患や届出・公表される感染症は、公的な発表と照合されやすい「特異な記述」です。</p>
+        </div>
+        <div>
+          <div class="chain"><span class="chip warn">116歳</span>＋<span class="chip warn">屋久島</span>＋<span class="chip warn">ジカ熱</span>＝<span class="chip bad">事実上一人に特定</span></div>
+          <div class="chain"><span class="chip good">100歳以上</span>＋<span class="chip good">（地名削除）</span>＋<span class="chip good">ジカ熱</span>＝<span class="chip ok">疾患の情報は残る</span></div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:16px">
+        <div class="tile"><h3>法律の視点：容易照合性</h3><p>文章から氏名を消しても、書き手の手元にはカルテがあり照合できるため、法律上は書き手の側からは個人情報のままです。「外部から特定できないか」の前に「患者の記述を外に出す必要があるか」を考えます。</p></div>
+        <div class="tile"><h3>入力先の視点：契約で決まる</h3><p>個人契約の一般向けAIは入力が保持される規約が多く「第三者提供」に近い扱いです。「保存しない・学習に使わない」を契約で担保した組織契約なら「委託」。可否は院内規程で決まります（<a href="https://www.mhlw.go.jp/content/10808000/001716290.pdf" target="_blank" rel="noopener">医療情報システム安全管理GL 7.0版</a> Q&amp;A 企画管理編 Q18）。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="container">
+      <div class="sec-head">
+        <h2>AIは抽出、ルールが判定。</h2>
+        <p>小型モデルに判定や書き換えを任せると誤りが多い一方、「本文から人名・地名を抜き出す」作業は正確です。AIには抽出だけをさせ、本文に実在することを検証してから、ルールが判定・置換します。</p>
+      </div>
+      <div class="grid4">
+        <div class="step"><div class="n">01</div><h3>入力</h3><p>症例要約、質問文、発表原稿など。どこにも送信・保存されません。</p></div>
+        <div class="step ai"><div class="n">02</div><h3>AI層<span class="badge">任意</span></h3><p>ブラウザ内の小型LLM（1.5B）が、辞書にない氏名、接尾辞のない地名、施設名、職業を本文から抜き出し、リスト未収載の疾患名の希少性を推定。判定はしません。</p></div>
+        <div class="step rule"><div class="n">03</div><h3>ルール層<span class="badge">最終判定</span></h3><p>正規表現・姓辞書・疾患リスト（指定難病348＋小児慢性特定疾病＋届出感染症）で検出し、AIの抽出結果も合流。準識別子の組合せを評価して判定し、書き換え文と理由を生成。AIなしでも即時に動きます。</p></div>
+        <div class="step"><div class="n">04</div><h3>出力</h3><div class="chips"><span class="chip bad">入力不可</span><span class="chip warn2">注意</span><span class="chip ok">問題なし</span></div><p>判定＋書き換え案＋変更箇所と理由。コピーしてそのまま使えます。</p></div>
+      </div>
+      <p class="note" style="margin-top:12px">貼り付けた直後にルール層が先に走って暫定結果を表示し、AI抽出が終わると同じルール層で再判定します。</p>
+      <div class="example">
+        <div class="lbl">書き換えの例</div>
+        <div class="ex">
+          <div>山田太郎くん、<i>5歳</i>男児。<i>2024年3月10日</i>に<i>大阪府堺市</i>の<i>当院</i>小児科へ発熱5日目で受診。川崎病と診断しIVIG投与。母親の連絡先 <i>090-1234-5678</i>。</div>
+          <div class="arrow" aria-hidden="true">→</div>
+          <div>患者、<b>幼児期</b>男児。<b>某日</b>に<b>一般病院</b>小児科へ発熱5日目で受診。川崎病と診断しIVIG投与。母親の連絡先<b>（電話番号削除）</b>。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block alt" id="refs">
+    <div class="container">
+      <div class="sec-head">
+        <h2>根拠となる資料</h2>
+        <p>判定の変更理由からも各資料へ直接リンクしています。URL は 2026年11月時点のもので、見つからない場合は資料名で検索してください。</p>
+      </div>
+      <div class="refs">
+        <a class="ref" href="https://laws.e-gov.go.jp/law/415AC0000000057" target="_blank" rel="noopener"><b>個人情報の保護に関する法律</b><span>e-Gov 法令検索。個人情報・個人識別符号・要配慮個人情報・仮名加工／匿名加工情報の定義</span></a>
+        <a class="ref" href="https://www.ppc.go.jp/personalinfo/legal/iryoukaigo_guidance/" target="_blank" rel="noopener"><b>医療・介護関係事業者における個人情報の適切な取扱いのためのガイダンス</b><span>個人情報保護委員会・厚生労働省、令和8年4月一部改正</span></a>
+        <a class="ref" href="https://www.mhlw.go.jp/content/10808000/001716290.pdf" target="_blank" rel="noopener"><b>医療情報システムの安全管理に関するガイドライン 第7.0版</b><span>厚生労働省、2026年6月。企画管理編 Q&amp;A Q18（生成AIと保存されないことの担保）</span></a>
+        <a class="ref" href="https://www.jsge.or.jp/wp-content/uploads/2023/08/kprivacy202107.pdf" target="_blank" rel="noopener"><b>症例報告を含む医学論文及び学会研究会発表における患者プライバシー保護に関する指針</b><span>外科関連学会協議会、平成27年改正。氏名・住所・日付・施設名・顔写真の扱い</span></a>
+        <a class="ref" href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000084783.html" target="_blank" rel="noopener"><b>指定難病の一覧（告示番号1〜348）</b><span>厚生労働省、令和8年4月時点。稀少疾患リストの出典</span></a>
+        <a class="ref" href="https://www.shouman.jp/pdf/contents/03_list_of_diseases.pdf" target="_blank" rel="noopener"><b>小児慢性特定疾病 対象疾病一覧</b><span>小児慢性特定疾病情報センター。小児の稀少疾患リストの出典</span></a>
+        <a class="ref" href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/kekkaku-kansenshou/kekkaku-kansenshou11/01.html" target="_blank" rel="noopener"><b>感染症法に基づく医師の届出</b><span>厚生労働省。届出・公表対象感染症の出典</span></a>
+        <a class="ref" href="https://www8.cao.go.jp/iryou/hourei/pdf/guideline.pdf" target="_blank" rel="noopener"><b>次世代医療基盤法ガイドライン</b><span>内閣府ほか、令和8年10月改定。匿名加工・仮名加工の加工基準</span></a>
+        <a class="ref" href="https://www.ppc.go.jp/personalinfo/legal/guidelines_anonymous/" target="_blank" rel="noopener"><b>個人情報保護法ガイドライン（仮名加工情報・匿名加工情報編）</b><span>個人情報保護委員会。「特異な記述」の削除</span></a>
+      </div>
     </div>
   </section>
 
   <footer>
-    広告・アクセス解析なし。本ツールはスクリーニング目的の参考情報であり、安全性や法令適合を保証しません。最終判断は入力先の規約と所属組織の規程に従ってください。<br>
-    ソースコード・例文テストセット：<a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
+    <div class="container f-in">
+      <div>広告・アクセス解析なし。スクリーニング目的の参考情報であり、安全性や法令適合を保証しません。<br>最終判断は入力先の規約と所属組織の規程に従ってください。</div>
+      <div><a href="https://github.com/mynrminto/pii-checker">ソースコード・例文テストセット（GitHub）</a></div>
+    </div>
   </footer>
 </main>
-<script type="module" src="app.js?v=29"></script>
+<script>
+  document.getElementById("sample").addEventListener("click", () => {
+    const t = document.getElementById("t");
+    t.value = "山田太郎くん、5歳男児。2024年3月10日に大阪府堺市の当院小児科へ発熱5日目で受診、2024年3月13日に川崎病と診断しIVIG 2g/kgを投与。母親の連絡先 090-1234-5678。";
+    t.focus();
+  });
+</script>
+<script type="module" src="app.js?v=30"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // ルール層 — 機械検出と決定論的な書き換え。どの端末でも瞬時に動き、結果が再現できる。
-import { findDiseases } from "./diseases.js?v=29";
-import { SURNAMES } from "./surnames.js?v=29";
+import { findDiseases } from "./diseases.js?v=30";
+import { SURNAMES } from "./surnames.js?v=30";
 
 const NUM = "[0-9０-９]";
 const toHalf = (s) => s.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
@@ -114,7 +114,10 @@ export function regexScan(raw) {
   // 住所として検出済みの文字列に含まれる地名は重複なので落とす
   const addr = hits.filter((h) => h.type === "住所" || h.type === "住所（番地）").map((h) => h.raw);
   for (let i = hits.length - 1; i >= 0; i--) if (hits[i].type === "地名" && addr.some((a) => a.includes(hits[i].raw))) hits.splice(i, 1);
-  for (const n of findNames(text)) hits.push({ type: n.strong ? "氏名" : "姓のみ", severity: n.strong ? "high" : "medium", basis: "学会指針1 氏名は記載しない", excerpt: n.text });
+  for (const n of findNames(text)) {
+    if (hits.some((h) => /^氏名/.test(h.type) && h.raw && (h.raw.includes(n.text) || n.text.includes(h.raw)))) continue;   // 敬称付き等で検出済み
+    hits.push({ type: n.strong ? "氏名" : "姓のみ", severity: n.strong ? "high" : "medium", basis: "学会指針1 氏名は記載しない", raw: n.text, excerpt: n.text });
+  }
   for (const d of findDiseases(text)) hits.push({ type: d.severity === "low" ? "指定難病（患者数多）" : "稀少・届出疾患", severity: d.severity, basis: `${d.group}：匿名加工情報編GL「特異な記述」`, excerpt: d.name });
   const keywords = SENSITIVE_WORDS.filter((w) => text.includes(w));
   return { hits, keywords, combo: comboRisk(hits, text) };
