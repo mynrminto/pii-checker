@@ -1,0 +1,299 @@
+[
+ {
+  "text": "山田太郎くん、5歳男児。2024年3月10日に大阪府堺市の当院小児科へ発熱5日目で受診。川崎病と診断しIVIG 2g/kgを投与。母親の連絡先 090-1234-5678。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "患者",
+   "幼児期",
+   "一般病院",
+   "（電話番号削除）",
+   "川崎病"
+  ],
+  "rewrite_excludes": [
+   "山田",
+   "090",
+   "堺"
+  ]
+ },
+ {
+  "text": "患者ID 20240315、佐藤花子様（8歳）。喘息発作で入院。",
+  "expect": "danger",
+  "rewrite_excludes": [
+   "佐藤",
+   "20240315",
+   "8歳"
+  ]
+ },
+ {
+  "text": "鈴木一郎氏、生年月日 2019年7月2日。保険証番号 12345678。ネフローゼ症候群で再発。",
+  "expect": "danger",
+  "rewrite_excludes": [
+   "鈴木",
+   "2019",
+   "12345678"
+  ],
+  "rewrite_contains": [
+   "ネフローゼ症候群"
+  ]
+ },
+ {
+  "text": "連絡先 yamada@example.com に検査結果を送付済み。",
+  "expect": "danger",
+  "rewrite_excludes": [
+   "example.com"
+  ]
+ },
+ {
+  "text": "〒590-0001 堺市堺区甲斐町1-2-3 在住の男児、熱性けいれん。",
+  "expect": "danger",
+  "rewrite_excludes": [
+   "590-0001",
+   "堺"
+  ]
+ },
+ {
+  "text": "高橋太郎さんの件、本日の紹介状を近畿大学病院小児科宛に作成。",
+  "expect": "danger",
+  "rewrite_excludes": [
+   "高橋",
+   "近畿大学病院"
+  ]
+ },
+ {
+  "text": "症例：116歳女性。屋久島でジカ熱への感染。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "100歳以上",
+   "（地名削除）",
+   "ジカ熱"
+  ],
+  "rewrite_excludes": [
+   "屋久島",
+   "116"
+  ]
+ },
+ {
+  "text": "7歳女児、佐渡島在住。ドラベ症候群で2023年12月に入院。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "学童期",
+   "ドラベ症候群",
+   "某年某月"
+  ],
+  "rewrite_excludes": [
+   "佐渡島",
+   "7歳"
+  ]
+ },
+ {
+  "text": "3歳男児、ムコ多糖症Ⅱ型。奈良県在住。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "ムコ多糖症"
+  ]
+ },
+ {
+  "text": "4歳男児、佐渡島在住。CDKL5欠損症で2024年6月に入院。気管支喘息の既往あり。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "CDKL5欠損症"
+  ]
+ },
+ {
+  "text": "生後2か月の女児、和歌山県の離島で先天性サイトメガロウイルス感染症。2024年に出生。",
+  "expect": "caution",
+  "needs_ai": true
+ },
+ {
+  "text": "県内で初めての小児のエムポックス症例。10歳男児、先週診断。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "エムポックス",
+   "学童期"
+  ]
+ },
+ {
+  "text": "昨日の当直で診た生後2か月の女の子、38.5℃の発熱で来て尿路感染だった。抗菌薬の選択を教えて。",
+  "expect": "caution",
+  "rewrite_contains": [
+   "先日",
+   "乳児期"
+  ]
+ },
+ {
+  "text": "12歳男児。ファンコニ貧血疑いで骨髄検査を予定。見るべき項目は？",
+  "expect": "caution",
+  "rewrite_contains": [
+   "学童期男児",
+   "ファンコニ貧血疑いで骨髄検査を予定。見るべき項目は？"
+  ]
+ },
+ {
+  "text": "横浜市在住の40代女性。関節リウマチと高血圧症で通院中。",
+  "expect": "caution",
+  "rewrite_contains": [
+   "（地名削除）",
+   "40代女性",
+   "関節リウマチ"
+  ]
+ },
+ {
+  "text": "当院NICUで今月3例目の早産児。在胎26週、出生体重800g。",
+  "expect": "caution"
+ },
+ {
+  "text": "〇〇小学校2年の男児、体育の授業中に失神。QT延長症候群を疑う。",
+  "expect": "ok",
+  "needs_ai": true
+ },
+ {
+  "text": "奈良県の小児科で、フェニルケトン尿症の新生児マススクリーニング陽性例。",
+  "expect": "caution"
+ },
+ {
+  "text": "川崎病のIVIG不応例に対する追加治療の選択肢を教えてください。",
+  "expect": "ok"
+ },
+ {
+  "text": "学童期の男児。ファンコニ貧血疑いで骨髄検査を予定。見るべき項目は？",
+  "expect": "ok",
+  "rewrite_contains": [
+   "学童期の男児。ファンコニ貧血"
+  ]
+ },
+ {
+  "text": "乳児早期の発熱性尿路感染症に対する経験的抗菌薬の標準的な考え方は？",
+  "expect": "ok"
+ },
+ {
+  "text": "50代男性のパーキンソン病。L-ドパの開始量の目安は？",
+  "expect": "ok"
+ },
+ {
+  "text": "6歳男児。アトピー性皮膚炎と食物アレルギー。2024年に発症。",
+  "expect": "ok",
+  "rewrite_contains": [
+   "学童期男児"
+  ]
+ },
+ {
+  "text": "ムコ多糖症Ⅱ型の酵素補充療法の開始時期を教えて。",
+  "expect": "ok"
+ },
+ {
+  "text": "幼児期男児。基準日に発熱で受診、基準日＋3日に川崎病と診断しIVIG開始、基準日＋5日に解熱。",
+  "expect": "ok"
+ },
+ {
+  "text": "3歳男児。2024年3月10日に発熱で受診、2024年3月13日に川崎病と診断しIVIG開始、2024年3月15日に解熱。",
+  "expect": "caution",
+  "rewrite_contains": [
+   "基準日に発熱",
+   "基準日＋3日",
+   "基準日＋5日"
+  ]
+ },
+ {
+  "text": "当科で経験した国内2例目の症例について相談したい。",
+  "expect": "caution",
+  "rewrite_contains": [
+   "一般病院"
+  ]
+ },
+ {
+  "text": "先月、府内の総合病院から紹介された思春期の女子。神経性やせ症。",
+  "expect": "caution",
+  "rewrite_contains": [
+   "先日",
+   "某施設"
+  ]
+ },
+ {
+  "text": "父親が市議会議員の男児。",
+  "expect": "caution",
+  "rewrite_contains": [
+   "父親（職業削除）"
+  ]
+ },
+ {
+  "text": "双子の兄が同じ病棟に入院中。",
+  "expect": "ok"
+ },
+ {
+  "text": "身長 195cm の13歳男児。",
+  "expect": "caution"
+ },
+ {
+  "text": "ジョン・スミス、7歳。来日中に発熱。",
+  "expect": "ok",
+  "needs_ai": true
+ },
+ {
+  "text": "タナカ ハナコ 3歳、保育園で発疹。",
+  "expect": "ok",
+  "needs_ai": true
+ },
+ {
+  "text": "担当は私、森本です。患者さんは学童期の女児で、紫斑病性腎炎。",
+  "expect": "caution",
+  "rewrite_contains": [
+   "某医師です",
+   "患者さんは学童期の女児",
+   "紫斑病性腎炎"
+  ],
+  "rewrite_excludes": [
+   "森本"
+  ]
+ },
+ {
+  "text": "大阪のとある病院で、去年の冬に診た珍しい経過の川崎病。",
+  "expect": "caution"
+ },
+ {
+  "text": "うちの病棟の、いつもの常連の子。今日はけいれんで来た。",
+  "expect": "ok"
+ },
+ {
+  "text": "近大病院から紹介のMichael Brown、9歳。てんかん。",
+  "expect": "caution",
+  "needs_ai": true,
+  "rewrite_contains": [
+   "某施設"
+  ]
+ },
+ {
+  "text": "ヤマダ タロウくん、神戸で先週、麻しん。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "（地名削除）",
+   "麻しん"
+  ],
+  "rewrite_excludes": [
+   "神戸"
+  ]
+ },
+ {
+  "text": "山田太郎は5歳男児。父親が市議会議員。堺市在住。",
+  "expect": "danger",
+  "rewrite_contains": [
+   "患者は幼児期男児",
+   "父親（職業削除）",
+   "（地名削除）"
+  ],
+  "rewrite_excludes": [
+   "山田",
+   "堺市"
+  ]
+ },
+ {
+  "text": "DMDの10歳男児、ステロイドの開始時期は？",
+  "expect": "caution",
+  "rewrite_contains": [
+   "DMDの学童期男児"
+  ]
+ },
+ {
+  "text": "珍しい経過の川崎病について一般的に教えて。",
+  "expect": "ok"
+ }
+]

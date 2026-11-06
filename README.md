@@ -45,6 +45,12 @@ Cloudflare Pages / Netlify でも「ビルドなし・ルートを公開」で�
 WebLLM は `https://esm.run/@mlc-ai/web-llm` から読み込み、モデル本体は Hugging Face からブラウザの Cache Storage に保存される。
 完全に自己ホストしたい場合は `npm i @mlc-ai/web-llm` して bundler で同梱し、モデルファイルも自サイトに置けばよい。
 
+## テスト
+```bash
+npm test     # tests/cases.json の例文をルール層だけで判定し、期待値と照合
+```
+例文と期待判定を `tests/cases.json` に足すと回帰テストになる。`needs_ai` が付いた例はAI抽出が前提（ルール単体の期待値で記載）。
+
 ## 資料の追加
 `docs/` の2ファイルは個人情報保護法の定義と医療分野の匿名化実務を自前で要約したもの。
 原典（法令全文＝著作権対象外、個情委・厚労省ガイダンス＝政府標準利用規約で再利用可）をテキスト化して `docs/` に置き、`docs/index.json` にファイル名を追加する。見出し（`#`）を残すと検索精度が上がる。

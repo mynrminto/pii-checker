@@ -1,6 +1,6 @@
-import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=23";
-import { findDiseases } from "./diseases.js?v=23";
-import { loadCorpus } from "./rag.js?v=23";
+import { regexScan, ruleRewrite, comboRisk } from "./rules.js?v=25";
+import { findDiseases } from "./diseases.js?v=25";
+import { loadCorpus } from "./rag.js?v=25";
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -75,11 +75,11 @@ async function ensureEngine() {
   return engine;
 }
 
-async function chat(system, user, maxTokens, onTok) {
+async function chat(system, user, maxTokens, onTok, temperature = 0) {
   const eng = await ensureEngine();
   const stream = await eng.chat.completions.create({
     messages: [{ role: "system", content: system }, { role: "user", content: user }],
-    temperature: 0.1, max_tokens: maxTokens, stream: true,
+    temperature, max_tokens: maxTokens, stream: true,
   });
   let out = "", n = 0;
   for await (const c of stream) { out += c.choices[0]?.delta?.content || ""; if (++n % 5 === 0) onTok(n); }
@@ -107,7 +107,7 @@ $("#go").onclick = async () => {
   lastRuleText = rw.text;
   const ctx = corpus ? corpus.search(text.slice(0, 1500), 3) : [];
   const order = { ok: 0, caution: 1, danger: 2, none: 0 };
-  const WEAK = new Set(["年齢", "月齢", "日付（年月）", "相対的な時期", "都道府県のみ", "指定難病（患者数多）", "稀少・届出疾患"]);
+  const WEAK = new Set(["年齢", "月齢", "日付（年月）", "相対的な時期", "都道府県のみ", "都道府県名（接尾辞なし）", "指定難病（患者数多）", "稀少・届出疾患", "家族構成", "特異な記述（経過）"]);
   const strongHits = hits.filter((h) => !WEAK.has(h.type));
   let ruleVerdict = hits.some((h) => h.severity === "high") ? "danger" : strongHits.length ? "caution" : "ok";
   if (order[combo.level] > order[ruleVerdict]) ruleVerdict = combo.level;
@@ -133,7 +133,14 @@ $("#go").onclick = async () => {
         const NAME_SHAPE = /^(?:[一-龥]{2,5}|[ァ-ヶー]{2,8}(?:[ \u3000・][ァ-ヶー]{2,8})?|[A-Z][a-z]+(?:[ ・][A-Z][a-z]+)+)(?:さん|様|氏|君|ちゃん|くん)?$/;
         const NOT_NAME = /[児者例期人症科院病歳母父親方達等々的性別類群]/;
         const nameOK = (w) => NAME_SHAPE.test(w) && !(/^[一-龥]/.test(w) && NOT_NAME.test(w.replace(/(さん|様|氏|君|ちゃん|くん)$/, "")));
-        for (const w of (r.names || []).filter(valid)) if (!GENERIC.test(w) && nameOK(w)) extra.push({ text: w, type: "氏名（AI抽出）", severity: "high", after: "患者", reason: "氏名：学会指針1 氏名・呼び名は記載しない（AIが抽出、本文に実在することを確認）" });
+        let namesCand = (r.names || []).filter(valid).filter((w) => !GENERIC.test(w) && nameOK(w));
+        if (namesCand.length) {   // 二段確認：人名か yes/no（誤抽出をさらに減らす）
+          try {
+            const c = extractJson(await chat(`各語が「人の名前（姓・名・フルネーム・呼び名）」かどうかを yes/no で答える。病名・地名・一般名詞は no。出力はJSONのみ。例: {"タナカ ハナコ":"yes","症例":"no","神戸":"no"}`, namesCand.join("\n"), 150, () => {}));
+            namesCand = namesCand.filter((w) => String(c[w] || "yes").toLowerCase().startsWith("y"));
+          } catch {}
+        }
+        for (const w of namesCand) extra.push({ text: w, type: "氏名（AI抽出）", severity: "high", after: "患者", reason: "氏名：学会指針1 氏名・呼び名は記載しない（AIが抽出、本文に実在することを確認）" });
         const PLACE_SHAPE = /^[一-龥ァ-ヶー]{2,8}$/, NOT_PLACE = /(病院|医院|施設|学校|小学校|中学校|高校|園|とある|某|当|本|病棟|科$|センター|会社)/;
         for (const w of (r.places || []).filter(valid)) if (!GENERIC.test(w) && PLACE_SHAPE.test(w) && !NOT_PLACE.test(w)) extra.push({ text: w, type: "地名（AI抽出）", severity: "medium", after: "（地名削除）", reason: "地名：学会指針2 住所は記載しない（AIが抽出）" });
         const FAC_SHAPE = /^[一-龥ァ-ヶーA-Za-z〇○]{2,14}(病院|医院|クリニック|診療所|センター|大学|学校|小学校|中学校|高校|園|会社|社)$/;
@@ -188,7 +195,7 @@ function ruleSummary(hits, kws, combo) {
   if (high.length) return `直接識別子（${[...new Set(high)].join("、")}）を含みます。下の書き換え案を使ってください。`;
   if (combo.level === "danger") return `単独の識別子はありませんが、${combo.factors.join("＋")}の組合せで事実上一人に特定されます（容易照合性・特異な記述）。`;
   if (combo.level === "caution") return `${combo.factors.join("＋")}の組合せで特定されうる可能性があります。`;
-  const weakOnly = hits.length && hits.every((h) => ["年齢", "月齢", "日付（年月）", "相対的な時期", "都道府県のみ", "指定難病（患者数多）", "稀少・届出疾患"].includes(h.type));
+  const weakOnly = hits.length && hits.every((h) => ["年齢", "月齢", "日付（年月）", "相対的な時期", "都道府県のみ", "都道府県名（接尾辞なし）", "指定難病（患者数多）", "稀少・届出疾患", "家族構成", "特異な記述（経過）"].includes(h.type));
   if (weakOnly && hits.some((h) => h.type === "稀少・届出疾患")) return "稀少疾患名を含みますが、地域・正確な年齢・時期がなければ単独では個人を識別しません。それらを足すときは特定につながります。";
   if (weakOnly) return "年齢・時期などは含まれますが、単独では個人を識別しません。他の情報を足すときは組合せに注意してください。";
   if (hits.length) return `単独では識別できませんが、${[...new Set(hits.map((h) => h.type))].join("、")}の組合せで特定されうる可能性があります。`;

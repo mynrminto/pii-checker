@@ -1,0 +1,6 @@
+{
+  "name": "pii-checker",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node tests/run.mjs" }
+}
