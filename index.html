@@ -157,12 +157,13 @@
     <div class="flow">
       <div class="step"><div class="step-l">入力</div><div class="step-t">貼り付けたテキスト</div><p>症例要約、質問文、発表原稿など。どこにも送信・保存されません。</p></div>
       <div class="arrow" aria-hidden="true">→</div>
-      <div class="step rule"><div class="step-l">ルール層（即時・決定論的）</div><div class="step-t">検出・書き換え・根拠</div><p>正規表現で氏名・連絡先・地名・日付・年齢を検出。指定難病348＋届出感染症のリストで特異な記述を判定。組合せを評価し、書き換え文と変更理由を生成。</p></div>
+      <div class="step ai"><div class="step-l">AI層（WebGPU・任意）</div><div class="step-t">固有名の抽出と希少性推定</div><p>小型LLM（1.5B）をブラウザ内で実行。辞書にない氏名（カタカナ・英字）、接尾辞のない地名、施設名、職業を本文から抜き出し、本文に実在するか・名前らしい形かを検証。リスト未収載の疾患名の希少性も推定。<b>判定はしません。</b></p></div>
       <div class="arrow" aria-hidden="true">→</div>
-      <div class="step ai"><div class="step-l">AI層（WebGPU・任意）</div><div class="step-t">固有名の抽出と希少性推定</div><p>小型LLM（1.5B）をブラウザ内で実行。辞書にない氏名（カタカナ・英字）、接尾辞のない地名、施設名、職業を本文から抜き出し、リスト未収載の疾患名の希少性を推定。判定はしません。</p></div>
+      <div class="step rule"><div class="step-l">ルール層（決定論的）</div><div class="step-t">検出・判定・書き換え・根拠</div><p>正規表現・姓辞書・疾患リスト（指定難病348＋小児慢性特定疾病＋届出感染症）で検出し、AIが抽出した語も合流。準識別子の組合せを評価して判定を決め、書き換え文と変更理由を生成。<b>AIを使わない場合も、ここだけで即時に動きます。</b></p></div>
       <div class="arrow" aria-hidden="true">→</div>
       <div class="step"><div class="step-l">出力</div><div class="chips"><span class="chip bad">入力不可</span><span class="chip warn2">注意</span><span class="chip ok">問題なし</span></div><p>判定＋書き換え案＋変更箇所と理由。コピーしてそのまま使えます。</p></div>
     </div>
+    <p class="note">※ 実際には、貼り付けた直後にルール層が先に走って暫定結果を表示し、AI抽出が終わると同じルール層で再判定します。ルールは常に最終判定者です。</p>
 
     <div class="grid2">
       <div class="box"><div class="box-t">AIは「抽出器」、ルールが「判定器」</div><p>小型モデルは判定や書き換えを任せると誤りが多い一方、「本文中の人名・地名を抜き出す」ような作業は正確です。そこで AI には抽出だけをさせ、抽出した文字列が本文に実在することを検証してから、ルール層が判定・置換します。</p></div>
@@ -198,6 +199,6 @@
     ソースコード: <a href="https://github.com/mynrminto/pii-checker" id="repo">GitHub</a>（確認・改良歓迎）
   </footer>
 </main>
-<script type="module" src="app.js?v=25"></script>
+<script type="module" src="app.js?v=26"></script>
 </body>
 </html>
